@@ -1,0 +1,53 @@
+name: monitor
+on:
+  schedule:
+    - cron: "*/15 * * * *" # UTC; o GitHub pode atrasar execuções agendadas em horários de pico
+  workflow_dispatch:
+permissions:
+  contents: write
+  issues: write
+  actions: read
+jobs:
+  sonda:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SITE_URL: ${{ vars.SITE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: observabilidade # branch só de dados de monitoramento
+      - uses: actions/checkout@v4
+        with:
+          path: codigo # scripts da main
+      - name: Sondar produção e homologação
+        id: s
+        run: |
+          mkdir -p status
+          [ -f status/sondas.csv ] || echo "data,alvo,codigo,tempo" > status/sondas.csv
+          down=""; slow=""
+          for alvo in "$SITE_URL/" "$SITE_URL/hml/"; do
+            read -r code tempo < <(curl -s -L -o /dev/null -m 15 -w '%{http_code} %{time_total}' "$alvo" || echo "000 15")
+            echo "$(date -u +%FT%TZ),$alvo,$code,$tempo" >> status/sondas.csv
+            [ "$code" = "200" ] || down="$down $alvo"
+            awk "BEGIN{exit !($tempo > 2)}" && slow="$slow $alvo" || true
+          done
+          echo "down=${down# }" >> "$GITHUB_OUTPUT"
+          echo "slow=${slow# }" >> "$GITHUB_OUTPUT"
+      - name: Alertas como Issues (abrem e fecham sozinhos)
+        run: |
+          alerta() { # nome, alvos afetados (vazio = normal), descrição
+            aberta=$(gh issue list --label alerta --state open --search "$1 in:title" --json number -q '.[0].number')
+            if [ -n "$2" ] && [ -z "$aberta" ]; then gh issue create --label alerta --title "$1: $2" --body "$3 em $(date -u +%FT%TZ)"
+            elif [ -z "$2" ] && [ -n "$aberta" ]; then gh issue close "$aberta" --comment "Normalizado em $(date -u +%FT%TZ)"; fi
+          }
+          alerta JogoForaDoAr "${{ steps.s.outputs.down }}" "Sonda sem resposta 200"
+          alerta LatenciaAlta "${{ steps.s.outputs.slow }}" "Resposta acima de 2 s"
+      - name: Métricas DORA
+        run: node codigo/scripts/dora.mjs > status/dora.json
+      - name: Salvar dados na branch observabilidade
+        run: |
+          git config user.name monitor && git config user.email monitor@users.noreply.github.com
+          git add status && git commit -qm "monitor: sonda" || exit 0
+          git pull -q --rebase origin observabilidade || true
+          git push -q

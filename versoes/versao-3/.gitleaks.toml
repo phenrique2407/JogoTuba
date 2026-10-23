@@ -1,0 +1,6 @@
+title = "gitleaks - Show do Bitlhao"
+[extend]
+useDefault = true
+[allowlist]
+description = "arquivos gerados"
+paths = ['''package-lock\.json''']
