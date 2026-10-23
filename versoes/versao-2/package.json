@@ -1,0 +1,28 @@
+{
+  "name": "show-do-bitlhao",
+  "version": "0.2.0",
+  "description": "Roguelike de perguntas de TI (Desafio Arcade) entregue por esteira CI/CD",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "lint": "eslint .",
+    "validate": "node scripts/validate-content.mjs",
+    "test": "vitest run",
+    "test:ci": "npm run validate && vitest run --coverage --reporter=default --reporter=junit --outputFile.junit=reports/junit.xml",
+    "e2e": "playwright test",
+    "build": "npm run validate && node scripts/build.mjs",
+    "serve": "serve dist -l 4173",
+    "gdd:pdf": "bash scripts/gdd.sh"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@playwright/test": "^1.48.0",
+    "@vitest/coverage-v8": "^2.1.0",
+    "esbuild": "^0.24.0",
+    "eslint": "^9.0.0",
+    "serve": "^14.2.0",
+    "vitest": "^2.1.0"
+  }
+}
