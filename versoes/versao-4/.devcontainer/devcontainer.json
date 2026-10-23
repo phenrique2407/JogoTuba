@@ -1,0 +1,14 @@
+{
+  "name": "show-do-bitlhao",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "features": { "ghcr.io/devcontainers/features/github-cli:1": {} },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "hostRequirements": { "cpus": 2 },
+  "forwardPorts": [4173],
+  "portsAttributes": { "4173": { "label": "Jogo (npm run serve)", "onAutoForward": "notify" } },
+  "customizations": {
+    "vscode": {
+      "extensions": ["dbaeumer.vscode-eslint", "vitest.explorer", "ms-playwright.playwright", "github.vscode-github-actions", "github.vscode-pull-request-github"]
+    }
+  }
+}
