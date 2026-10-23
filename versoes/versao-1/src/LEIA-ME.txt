@@ -1,0 +1,7 @@
+SHOW DO BITLHÃO — build offline
+================================
+1. Descompacte o build.zip.
+2. Abra o arquivo index.html no navegador (Chrome, Edge ou Firefox). Não precisa de internet.
+   Alternativa: na pasta, rode `npx serve .` e abra o endereço mostrado.
+3. Jogo 100% por clique/toque. Sem coleta de dados pessoais: ranking e perfil ficam só no seu navegador.
+Versão e commit: veja version.json.
