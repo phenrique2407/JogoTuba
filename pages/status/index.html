@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Status · SHOW DO BITLHÃO</title>
+<style>
+body{font:16px system-ui;background:#14002e;color:#fff;max-width:780px;margin:0 auto;padding:20px}
+h1{color:#ffe600}h2{color:#00e5ff;margin-top:28px}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.c{background:#1d0b3d;border:3px solid #000;padding:12px;border-radius:6px}.c b{display:block;font-size:1.5rem;color:#a6ff00}.c small{color:#bbb}
+.bad{color:#ff1744!important}table{width:100%;border-collapse:collapse;font-size:.85rem}td,th{padding:4px;border-bottom:1px solid #4a2a8a;text-align:left}
+</style>
+<h1>Status do jogo</h1>
+<div class="g" id="cards">Carregando…</div>
+<h2>DORA</h2><div class="g" id="dora"></div>
+<h2>Últimas sondas</h2><table id="t"></table>
+<script>
+const dono = location.hostname.split(".")[0], repo = location.pathname.split("/")[1];
+const raw = "https://raw.githubusercontent.com/" + dono + "/" + repo + "/observabilidade/status/";
+const card = (t, v, s, bad) => '<div class="c"><small>' + t + '</small><b class="' + (bad ? "bad" : "") + '">' + v + "</b><small>" + (s || "") + "</small></div>";
+(async () => {
+  const [csv, ro, dora] = await Promise.all([
+    fetch(raw + "sondas.csv", { cache: "no-store" }).then((r) => r.text()).catch(() => ""),
+    fetch("../rollout.json", { cache: "no-store" }).then((r) => r.json()).catch(() => ({})),
+    fetch(raw + "dora.json", { cache: "no-store" }).then((r) => r.json()).catch(() => null),
+  ]);
+  const rows = csv.trim().split("\n").slice(1).map((l) => l.split(","));
+  const de = (hml) => rows.filter((r) => (r[1] || "").includes("/hml/") === hml).slice(-96);
+  const prod = de(false), hml = de(true);
+  const up = (a) => (a.length ? ((100 * a.filter((r) => r[2] === "200").length) / a.length).toFixed(1) + "%" : "—");
+  const last = prod[prod.length - 1];
+  let html = card("Disponibilidade produção (24 h)", up(prod), "homologação: " + up(hml), up(prod) !== "100.0%" && prod.length > 0);
+  html += card("Latência (última sonda)", last ? (+last[3]).toFixed(2) + " s" : "—", last ? last[0] : "", last && +last[3] > 2);
+  html += card("Versão em produção", ro.estavel || "—", "anterior: " + (ro.anterior || "—"));
+  html += card("Canário", ro.canario ? ro.percentual + "%" : "inativo", ro.canario || "");
+  document.getElementById("cards").innerHTML = html;
+  document.getElementById("dora").innerHTML = dora
+    ? card("Frequência de deploy", dora.frequenciaDeploysPorDia + "/dia", dora.deploys + " deploys") +
+      card("Lead time", dora.leadTimeDias + " dias", "linha de base Carparts: 11 dias") +
+      card("Falha de mudança", dora.taxaFalhaMudanca, dora.rollbacks + " rollbacks") +
+      card("Recuperação (MTTR)", dora.mttrHoras + " h", "alertas fechados")
+    : "<p>Sem dados DORA ainda.</p>";
+  document.getElementById("t").innerHTML = "<tr><th>Data (UTC)</th><th>Alvo</th><th>HTTP</th><th>Tempo</th></tr>" +
+    rows.slice(-15).reverse().map((r) => "<tr><td>" + r[0] + "</td><td>" + r[1] + "</td><td>" + r[2] + "</td><td>" + r[3] + "s</td></tr>").join("");
+})();
+</script>
+</html>

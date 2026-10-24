@@ -1,0 +1,14 @@
+name: rollback
+on:
+  workflow_dispatch: # acionado à mão: Actions → rollback → Run workflow
+permissions:
+  contents: write
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Voltar estavel para anterior (ou remover o canário)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./scripts/rollout.sh rollback

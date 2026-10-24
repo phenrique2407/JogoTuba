@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevOps · Avaliação · Desafio Arcade: Esteira CI/CD de um Jogo Educativo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600;6..72,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --senai-red:#e3142f; --senai-red-dk:#b40d22; --ink:#16161a; --ink-2:#3b3b44; --muted:#6b6b76;
+  --paper:#f6f3ec; --paper-2:#ede8dc; --card:#fffdf8; --line:#d9d2c3; --line-2:#e7e1d4;
+  --blue:#1f5fbf; --blue-bg:#e8f0fb; --green:#1d7a46; --green-bg:#e5f3ea; --violet:#6a3fb5; --violet-bg:#efe8fa;
+  --amber:#a96400; --amber-bg:#fdf1dc; --danger:#b3261e; --danger-bg:#fbe7e5;
+  --code-bg:#15171c; --code-ink:#e6e6e6;
+  --f-display:"Newsreader",Georgia,"Times New Roman",serif;
+  --f-text:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,"Courier New",monospace;
+  --r:10px; --wrap:1080px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.65 var(--f-text);-webkit-font-smoothing:antialiased}
+a{color:var(--blue);text-underline-offset:2px}
+a:hover{color:var(--senai-red)}
+img,svg{max-width:100%}
+code{font-family:var(--f-mono);font-size:.88em;background:var(--paper-2);border:1px solid var(--line-2);padding:.05em .35em;border-radius:4px}
+h1,h2,h3,h4{font-family:var(--f-display);line-height:1.2;margin:0 0 .5em}
+h3{font-size:1.35rem} h4{font-size:1.08rem;font-family:var(--f-text);font-weight:700}
+p{margin:0 0 .9em}
+ul,ol{margin:0 0 1em;padding-left:1.25em}
+li{margin:.2em 0}
+
+/* progresso e trilho */
+#prog{position:fixed;top:0;left:0;height:4px;width:0;background:var(--senai-red);z-index:100;transition:width .1s linear}
+.rail{position:fixed;right:14px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:9px;z-index:90}
+.rail a{position:relative;display:block;width:11px;height:11px;border-radius:50%;background:var(--line);border:2px solid var(--paper);box-shadow:0 0 0 1px var(--line)}
+.rail a.on{background:var(--senai-red);box-shadow:0 0 0 1px var(--senai-red)}
+.rail a span{position:absolute;right:20px;top:50%;transform:translateY(-50%);white-space:nowrap;background:var(--ink);color:#fff;font-size:.72rem;padding:.15em .55em;border-radius:4px;opacity:0;pointer-events:none;transition:opacity .15s}
+.rail a:hover span{opacity:1}
+@media (max-width:900px){.rail{display:none}}
+
+/* masthead */
+.mast{background:#fff;border-bottom:1px solid var(--line)}
+.mast-in{max-width:var(--wrap);margin:0 auto;padding:18px 20px;display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.mast .logo{height:46px;width:auto}
+.mast .inst{font-size:.84rem;color:var(--ink-2);line-height:1.35;border-left:2px solid var(--line);padding-left:18px}
+.mast .inst b{color:var(--ink)}
+.subhead{background:var(--ink);color:#fff}
+.subhead-in{max-width:var(--wrap);margin:0 auto;padding:9px 20px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font:600 .8rem/1.3 var(--f-mono);letter-spacing:.08em;text-transform:uppercase}
+.subhead .aula{background:var(--senai-red);padding:.15em .6em;border-radius:3px}
+
+/* hero */
+.hero{max-width:var(--wrap);margin:0 auto;padding:46px 20px 26px}
+.kicker{font:600 .78rem var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--senai-red);margin-bottom:.7em}
+.hero h1{font-size:clamp(2rem,4.6vw,3.3rem);font-weight:700;letter-spacing:-.01em;max-width:26ch}
+.hero .sub{font-size:1.12rem;color:var(--ink-2);max-width:68ch}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.meta span{font-size:.8rem;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:.25em .8em;color:var(--ink-2)}
+
+/* identificação do aluno */
+.idbar{position:sticky;top:0;z-index:80;background:rgba(246,243,236,.94);backdrop-filter:blur(6px);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.idbar-in{max-width:var(--wrap);margin:0 auto;padding:8px 20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.idbar label{font:600 .72rem var(--f-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.idbar input{font:inherit;font-size:.9rem;padding:.35em .6em;border:1px solid var(--line);border-radius:6px;background:#fff;min-width:0}
+.idbar #alunoNome{flex:1 1 220px}
+.idbar #alunoRA{flex:0 1 140px}
+.idbar .hint{font-size:.78rem;color:var(--muted)}
+
+/* layout de blocos */
+.wrap{max-width:var(--wrap);margin:0 auto;padding:10px 20px 40px}
+.block{padding:54px 0 22px;border-bottom:1px solid var(--line);scroll-margin-top:60px}
+.block-head{display:flex;align-items:baseline;gap:16px;margin-bottom:.35em}
+.block-head .num{font:700 .95rem var(--f-mono);color:#fff;background:var(--senai-red);padding:.2em .55em;border-radius:5px;flex:none}
+.block-head h2{font-size:clamp(1.6rem,3.2vw,2.25rem);margin:0}
+.block-sub{color:var(--muted);font-size:1rem;margin:0 0 1.6em;max-width:75ch}
+.lead{font-size:1.07rem;color:var(--ink-2)}
+
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:0 0 1.2em}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:0 0 1.2em}
+.g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:0 0 1.2em}
+.g2>*,.g3>*,.g4>*{min-width:0}
+@media (max-width:860px){.g3,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:620px){.g2,.g3,.g4{grid-template-columns:1fr}}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 18px 14px;border-top:4px solid var(--line)}
+.card h4{margin:0 0 .4em}
+.card p:last-child,.card ul:last-child{margin-bottom:0}
+.card.accent{border-top-color:var(--senai-red)}
+.card.blue{border-top-color:var(--blue)}
+.card.green{border-top-color:var(--green)}
+.card.violet{border-top-color:var(--violet)}
+.card .tag{font:600 .7rem var(--f-mono);text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+.stat b{display:block;font:700 1.75rem/1.1 var(--f-display);color:var(--senai-red)}
+.stat span{font-size:.84rem;color:var(--ink-2)}
+
+.callout{background:var(--blue-bg);border-left:4px solid var(--blue);border-radius:0 var(--r) var(--r) 0;padding:14px 18px;margin:0 0 1.2em}
+.callout p:last-child{margin-bottom:0}
+.callout .ttl{font-weight:700;display:block;margin-bottom:.25em}
+.callout.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.callout.danger{background:var(--danger-bg);border-left-color:var(--danger)}
+.callout.ok{background:var(--green-bg);border-left-color:var(--green)}
+
+.badge{display:inline-block;font:600 .7rem/1.4 var(--f-mono);padding:.1em .5em;border-radius:4px;background:var(--paper-2);color:var(--ink-2);vertical-align:middle;letter-spacing:.02em}
+.badge.g{background:var(--green-bg);color:var(--green)}
+.badge.b{background:var(--blue-bg);color:var(--blue)}
+.badge.v{background:var(--violet-bg);color:var(--violet)}
+.badge.r{background:var(--danger-bg);color:var(--danger)}
+
+/* fluxo */
+.flow{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 1.3em;counter-reset:st;padding:0;list-style:none}
+.flow .step{flex:1 1 150px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;position:relative;counter-increment:st;margin:0}
+.flow .step::before{content:counter(st,decimal-leading-zero);font:700 .74rem var(--f-mono);color:var(--senai-red);display:block;margin-bottom:.2em}
+.flow .step b{display:block;font-size:.95rem}
+.flow .step span{font-size:.83rem;color:var(--ink-2)}
+
+/* linha do tempo */
+.timeline{list-style:none;margin:0 0 1.4em;padding:0;position:relative}
+.timeline::before{content:"";position:absolute;left:92px;top:4px;bottom:4px;width:2px;background:var(--line)}
+.timeline li{display:grid;grid-template-columns:80px 1fr;gap:26px;margin:0 0 16px;position:relative}
+.timeline li::after{content:"";position:absolute;left:86px;top:7px;width:14px;height:14px;border-radius:50%;background:var(--paper);border:3px solid var(--senai-red)}
+.timeline .yr{font:700 1rem var(--f-mono);text-align:right;color:var(--ink)}
+.timeline .ev b{display:block}
+.timeline .ev span{color:var(--ink-2);font-size:.94rem}
+@media (max-width:560px){.timeline::before{left:6px}.timeline li{grid-template-columns:1fr;gap:2px;padding-left:28px}.timeline li::after{left:0}.timeline .yr{text-align:left}}
+
+/* tabelas */
+.tbl-scroll{overflow-x:auto;margin:0 0 1.3em;border:1px solid var(--line);border-radius:var(--r);background:var(--card)}
+table.data{border-collapse:collapse;width:100%;font-size:.9rem;min-width:620px}
+table.data th{background:var(--ink);color:#fff;text-align:left;font-weight:600;padding:9px 12px;font-size:.82rem;letter-spacing:.02em}
+table.data td{padding:9px 12px;border-top:1px solid var(--line-2);vertical-align:top}
+table.data tr:nth-child(even) td{background:#faf7f0}
+
+/* código */
+.codebox{margin:0 0 1.3em;border-radius:var(--r);overflow:hidden;background:var(--code-bg);border:1px solid #000}
+.codebox .cbar{display:flex;justify-content:space-between;align-items:center;padding:6px 10px 6px 14px;background:#22252c;color:#aab;font:500 .74rem var(--f-mono)}
+.codebox .cp{font:600 .72rem var(--f-mono);background:#353945;color:#fff;border:0;border-radius:4px;padding:.3em .7em;cursor:pointer}
+.codebox .cp:hover{background:var(--senai-red)}
+pre.code{margin:0;padding:14px 16px;overflow-x:auto;color:var(--code-ink);font:13.5px/1.6 var(--f-mono);tab-size:2}
+pre.code code{background:none;border:0;padding:0;border-radius:0;font-size:inherit;color:inherit}
+pre.code .key{color:#ff8f7a;font-weight:600}
+pre.code .str{color:#9ed98a}
+pre.code .cmt{color:#8b93a7;font-style:italic}
+pre.code .var{color:#f3c969}
+
+/* abas */
+.tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:2px solid var(--ink);margin:0}
+.tabs button{font:600 .85rem var(--f-text);background:var(--paper-2);border:1px solid var(--line);border-bottom:0;border-radius:7px 7px 0 0;padding:.5em 1em;cursor:pointer;color:var(--ink-2)}
+.tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tabpanes{margin:0 0 1.4em}
+.tabpane{display:none;padding:18px 0 0}
+.tabpane.on{display:block}
+
+/* diagrama */
+.figure{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin:0 0 1.3em;overflow-x:auto}
+.figure svg{display:block;min-width:640px;width:100%;height:auto}
+.figure figcaption{font-size:.82rem;color:var(--muted);margin-top:8px}
+
+/* spoilers */
+details.spoiler{background:var(--card);border:1px dashed var(--line);border-radius:8px;padding:8px 14px;margin:.5em 0 0}
+details.spoiler summary{cursor:pointer;font-weight:600;font-size:.88rem;color:var(--senai-red)}
+details.spoiler[open]{border-style:solid}
+details.spoiler div{padding-top:8px;font-size:.93rem;color:var(--ink-2)}
+
+/* exercícios */
+.ex{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin:0 0 1.2em}
+.pills{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+.pills span{width:30px;height:30px;display:grid;place-items:center;border-radius:50%;font:600 .75rem var(--f-mono);background:var(--paper-2);color:var(--muted);border:1px solid var(--line)}
+.pills span.ok{background:var(--green);color:#fff;border-color:var(--green)}
+.pills span.no{background:var(--danger);color:#fff;border-color:var(--danger)}
+.qitem{border-top:1px solid var(--line-2);padding:14px 0 6px}
+.qitem:first-of-type{border-top:0;padding-top:0}
+.qitem .q{font-weight:600;margin-bottom:.55em}
+.qitem .q small{font:600 .72rem var(--f-mono);color:var(--senai-red);margin-right:6px}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (max-width:620px){.opts{grid-template-columns:1fr}}
+.opts.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:860px){.opts.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:620px){.opts.four{grid-template-columns:1fr}.idbar .hint{display:none}}
+.opts button{font:inherit;font-size:.9rem;text-align:left;background:#fff;border:1px solid var(--line);border-radius:8px;padding:.55em .8em;cursor:pointer;color:var(--ink)}
+.opts button:hover:not(:disabled){border-color:var(--ink)}
+.opts button.sel-ok{background:var(--green-bg);border-color:var(--green);font-weight:600}
+.opts button.sel-no{background:var(--danger-bg);border-color:var(--danger);font-weight:600}
+.opts button.right{border-color:var(--green);border-style:dashed}
+.opts button:disabled{cursor:default}
+.fb{display:none;font-size:.9rem;margin-top:8px;padding:8px 12px;border-radius:6px}
+.fb.show{display:block}
+.fb.ok{background:var(--green-bg);color:#124d2c}
+.fb.no{background:var(--danger-bg);color:#7a1a14}
+.score{font:600 .9rem var(--f-mono);margin-top:10px}
+.btn{font:600 .9rem var(--f-text);background:var(--ink);color:#fff;border:0;border-radius:8px;padding:.65em 1.2em;cursor:pointer}
+.btn:hover:not(:disabled){background:var(--senai-red)}
+.btn:disabled{background:#aaa;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--ink)}
+.btn.ghost:hover{background:var(--ink);color:#fff}
+
+.seqlist{list-style:none;padding:0;margin:0 0 12px}
+.seqlist li{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:0 0 6px}
+.seqlist li .pos{font:700 .78rem var(--f-mono);color:var(--muted);width:24px;flex:none}
+.seqlist li .txt{flex:1;font-size:.92rem}
+.seqlist li .mv{display:flex;gap:4px;flex:none}
+.seqlist li .mv button{width:30px;height:30px;border:1px solid var(--line);background:var(--paper);border-radius:6px;cursor:pointer;font-size:.8rem}
+.seqlist li .mv button:hover{background:var(--ink);color:#fff}
+.seqlist li.good{border-color:var(--green);background:var(--green-bg)}
+.seqlist li.bad{border-color:var(--danger);background:var(--danger-bg)}
+
+.disc textarea,.prat textarea{width:100%;min-height:120px;font:inherit;font-size:.92rem;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff;resize:vertical}
+.wc{font:500 .75rem var(--f-mono);color:var(--muted);margin:4px 0 0}
+.wc.ok{color:var(--green)}
+
+.prat .deliv{border-top:1px solid var(--line-2);padding:14px 0}
+.prat .deliv:first-of-type{border-top:0}
+.prat .deliv h4{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.prat .deliv h4 .badge{font-size:.78rem}
+
+.checks{list-style:none;padding:0;margin:0 0 16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (max-width:620px){.checks{grid-template-columns:1fr}}
+.checks li{display:flex;gap:10px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:.9rem;margin:0}
+.checks li i{width:20px;height:20px;border-radius:50%;flex:none;background:var(--paper-2);border:2px solid var(--line);font-style:normal;display:grid;place-items:center;font-size:.7rem;color:#fff}
+.checks li.ok i{background:var(--green);border-color:var(--green)}
+.checks li.ok i::before{content:"✓"}
+.finrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+#finMsg{font-size:.88rem;color:var(--muted)}
+
+/* rodapé */
+footer.foot{background:var(--ink);color:#d8d8de;margin-top:40px}
+.foot-in{max-width:var(--wrap);margin:0 auto;padding:44px 20px 30px}
+.foot h2{color:#fff;font-size:1.7rem}
+.foot h3{color:#fff;font-size:1.05rem;font-family:var(--f-text);font-weight:700;margin:0 0 .6em;padding-bottom:.35em;border-bottom:2px solid var(--senai-red)}
+.foot a{color:#9cc3ff}
+.foot a:hover{color:#fff}
+.srcs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:26px;margin:0 0 30px}
+@media (max-width:860px){.srcs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.srcs{grid-template-columns:1fr}}
+.srcs ul{list-style:none;padding:0;margin:0}
+.srcs li{margin:0 0 .6em;font-size:.86rem;line-height:1.4}
+.srcs li small{display:block;color:#9a9aa6;font-size:.76rem}
+.vids{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0 0 30px}
+@media (max-width:620px){.vids{grid-template-columns:1fr}}
+.vid{display:flex;gap:12px;align-items:flex-start;background:#22232a;border:1px solid #34353f;border-radius:10px;padding:12px 14px;text-decoration:none}
+.vid:hover{border-color:var(--senai-red)}
+.vid .play{flex:none;width:38px;height:38px;border-radius:50%;background:var(--senai-red);display:grid;place-items:center;color:#fff;font-size:.9rem}
+.vid b{display:block;color:#fff;font-size:.9rem;line-height:1.35}
+.vid span{display:block;color:#a8a8b3;font-size:.78rem;margin-top:2px}
+.foot .fine{border-top:1px solid #34353f;padding-top:16px;font-size:.78rem;color:#9a9aa6}
+
+/* avaliação: ficha */
+.fld{display:flex;flex-direction:column;gap:4px;font-size:.86rem;color:var(--ink-2)}
+.fld i{color:var(--muted);font-style:normal;font-size:.78rem}
+.req{color:var(--senai-red)}
+.prat input[type=text],.prat input[type=number],.prat select{width:100%;font:inherit;font-size:.9rem;padding:.4em .6em;border:1px solid var(--line);border-radius:6px;background:#fff;min-width:0}
+.prat input[type=number]{max-width:110px}
+table.members{min-width:560px}
+.chk{display:flex;gap:8px;align-items:flex-start;cursor:pointer;font-size:.92rem}
+.chk input{margin-top:.3em;accent-color:var(--senai-red);width:16px;height:16px;flex:none}
+ul.decl{list-style:none;padding:0;margin:0 0 16px}
+ul.decl li{background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:0 0 6px}
+.prat h3{margin-top:1.1em}
+.tabpane h3 .badge{font-size:.8rem}
+</style>
+</head>
+<body>
+<div id="prog"></div>
+<nav class="rail" aria-label="Seções da avaliação"><a href="#s1"><span>01 · O desafio</span></a><a href="#s2"><span>02 · Regulamento → requisitos</span></a><a href="#s3"><span>03 · Squad e papéis</span></a><a href="#s4"><span>04 · Arquitetura da esteira</span></a><a href="#s5"><span>05 · Integráveis</span></a><a href="#s6"><span>06 · Kit de partida</span></a><a href="#s7"><span>07 · Cronograma</span></a><a href="#s8"><span>08 · Rubrica e nota</span></a><a href="#s9"><span>09 · IA, licenças e LGPD</span></a><a href="#s10"><span>10 · Ficha de entrega</span></a></nav>
+<header class="mast"><div class="mast-in">
+  <svg class="logo" viewBox="0 0 260 60" role="img" aria-label="UNISENAI"><rect x="0" y="0" width="260" height="60" rx="4" fill="#e3142f"/><text x="130" y="41" text-anchor="middle" font-family="'Arial Black','Arial Bold',Arial,sans-serif" font-weight="900" font-size="31" letter-spacing="1" fill="#fff">UNISENAI</text></svg>
+  <div class="inst"><b>Faculdade SENAI</b><br>Tecnologia em Análise e Desenvolvimento de Sistemas · 2º semestre<br>Unidade curricular: Integração e Entrega Contínua – DevOps</div>
+</div></header>
+<div class="subhead"><div class="subhead-in"><span><span class="aula">AVALIAÇÃO</span> &nbsp;Desafio Arcade · Esteira DevOps de um jogo</span><span>Prévia 05/10 · Entrega e banca 09/10/2026</span></div></div>
+
+<section class="hero">
+  <div class="kicker">Avaliação somativa · SAP1-DEVOPS · Aulas 01 a 07</div>
+  <h1>Desafio Arcade: do Game Design Document à produção, por uma esteira CI/CD</h1>
+  <p class="sub">Cada squad de quatro consultores DevOps vai criar o protótipo de um jogo que facilite o acesso à educação em tecnologia, seguindo o regulamento do concurso <b>Framework Arcade</b>, e entregá-lo por uma esteira completa: Git, GitHub Actions, testes, releases versionadas, ambientes no GitHub Pages, entrega canário ou azul-verde, rollback e monitoramento. Quem avalia é a esteira: o jogo só conta se chegar à produção por ela.</p>
+  <div class="meta">
+    <span>Equipes de 4 integrantes</span>
+    <span>10 integráveis · 70% da nota</span>
+    <span>Banca "investidores" no formato Arcade · 30%</span>
+    <span>1ª prévia: 05/10/2026</span>
+    <span>Entrega, apresentação e avaliação: 09/10/2026</span>
+    <span>Concurso (opcional): 21/10/2026, 23h59</span>
+  </div>
+</section>
+
+<div class="idbar"><div class="idbar-in">
+  <label for="squadNome">Squad</label><input id="squadNome" type="text" placeholder="Nome do squad">
+  <label for="squadRepo">Repositório</label><input id="squadRepo" type="url" placeholder="https://github.com/…">
+  <span class="hint">Usados na ficha de entrega (seção 10)</span>
+</div></div>
+
+<main class="wrap">
+
+<!-- 01 -->
+<section class="block" id="s1">
+  <div class="block-head"><span class="num">01</span><h2>O desafio</h2></div>
+  <p class="block-sub">Um novo cliente para a esteira que vocês construíram ao longo do semestre: em vez da aplicação da Carparts, um jogo educativo com prazo, regulamento e triagem técnica de verdade.</p>
+
+  <div class="g4">
+    <div class="stat"><b>4</b><span>integrantes por squad, fixos do início ao fim (regulamento, item 5)</span></div>
+    <div class="stat"><b>90 s</b><span>duração máxima do vídeo de apresentação (item 6.3 c)</span></div>
+    <div class="stat"><b>3</b><span>materiais obrigatórios: GDD, build jogável e vídeo (item 6.3)</span></div>
+    <div class="stat"><b>0</b><span>tolerância na triagem: arquivo que não abre elimina (item 7.2)</span></div>
+  </div>
+
+  <div class="g2">
+    <div class="card accent">
+      <span class="tag">Situação-problema</span>
+      <h4>Esteira DevOps · Squad Arcade</h4>
+      <p>A consultoria DevOps do 2º ADS foi contratada por um squad que vai disputar o <b>Framework Arcade</b>, concurso cultural da Framework Digital com apoio do Programadores do Amanhã. O tema é fixo: <b>um protótipo gamificado que facilite o acesso à educação em tecnologia</b>.</p>
+      <p>O regulamento é duro com falhas operacionais: na triagem, um arquivo corrompido, um link fora do ar ou uma entrega um minuto atrasada desclassifica o squad, "independentemente do mérito do protótipo" (item 7.2). É exatamente o tipo de risco que uma esteira de entrega contínua existe para eliminar.</p>
+    </div>
+    <div class="card blue">
+      <span class="tag">O que se avalia</span>
+      <h4>A esteira, não só o jogo</h4>
+      <p>O jogo é a carga útil. A avaliação recai sobre <b>como</b> ele é versionado, testado, empacotado, implantado, observado e entregue. Um jogo bonito publicado à mão vale pouco; um jogo simples entregue por uma esteira rastreável, com rollback demonstrado, vale muito.</p>
+      <p>A mesma esteira que vocês desenharam para a Carparts (lead time de 11 dias na linha de base) agora precisa colocar um jogo em produção várias vezes por semana.</p>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <span class="ttl">A inscrição no concurso é opcional; a avaliação não</span>
+    <p>O regulamento exige participantes <b>maiores de 18 anos</b>, inscrição individual por CPF, publicação do vídeo no Instagram em colaboração com os perfis oficiais e aceite das cláusulas de imagem e de licença de uso dos materiais (itens 4, 6.3, 12.4 e 13). Por isso, inscrever-se é decisão de cada squad. A nota da UC depende apenas dos integráveis e da banca; participar, ser finalista ou vencer o concurso não altera a nota. A Faculdade SENAI não organiza nem tem vínculo com o Framework Arcade.</p>
+  </div>
+</section>
+
+<!-- 02 -->
+<section class="block" id="s2">
+  <div class="block-head"><span class="num">02</span><h2>Do regulamento aos requisitos da esteira</h2></div>
+  <p class="block-sub">Cada exigência do regulamento vira um requisito verificável, e cada requisito tem um integrável que o atende. Leiam o regulamento completo; esta tabela não o substitui.</p>
+
+  <div class="tbl-scroll"><table class="data">
+    <thead><tr><th>Item</th><th>O que o regulamento exige</th><th>Requisito para a esteira</th><th>Integrável</th></tr></thead>
+    <tbody>
+      <tr><td>1.2</td><td>Protótipo gamificado voltado à facilitação do acesso à educação em tecnologia.</td><td>Tema registrado no GDD, com público-alvo e o problema que o jogo ataca.</td><td><span class="badge">INT-02</span></td></tr>
+      <tr><td>3.1 · 3.2</td><td>Tudo submetido até 21/10/2026, 23h59 (Brasília). Não há prazo extra de produção.</td><td>Tag de release <code>v1.0.0</code> e entrega no AVA em 09/10, doze dias antes do prazo do concurso.</td><td><span class="badge">INT-01</span> <span class="badge">INT-09</span></td></tr>
+      <tr><td>5.1 · 5.3</td><td>Exatamente 4 integrantes; desistência de um cancela o squad.</td><td><code>SQUAD.md</code> no repositório e contribuição rastreável de todos no Git.</td><td><span class="badge">INT-01</span></td></tr>
+      <tr><td>6.3 a</td><td>GDD com premissa, gênero, mecânicas-core e referências.</td><td>GDD versionado em Markdown e convertido em PDF pela pipeline.</td><td><span class="badge">INT-02</span></td></tr>
+      <tr><td>6.3 b</td><td>Protótipo interativo em build executável, navegável via web ou mobile.</td><td>Build web publicada em URL pública e também empacotada em <code>.zip</code> que roda offline.</td><td><span class="badge">INT-06</span> <span class="badge">INT-09</span></td></tr>
+      <tr><td>6.3 c</td><td>Vídeo de até 90 s com proposta, conceito e diferencial.</td><td>Duração conferida por script (<code>ffprobe</code>) antes da entrega.</td><td><span class="badge">INT-10</span> <span class="badge">INT-09</span></td></tr>
+      <tr><td>6.4</td><td>Pasta no Google Drive com todos os arquivos, compartilhada com acesso total ao e-mail da organização.</td><td>Pacote de submissão gerado pela pipeline, com manifesto e hashes SHA-256.</td><td><span class="badge">INT-09</span></td></tr>
+      <tr><td>7.1 · 7.2</td><td>Triagem: arquivos abrem e funcionam, squad completo, prazo cumprido, sem plágio.</td><td><b>Triagem como código</b>: um job reproduz a triagem antes que a organização a faça.</td><td><span class="badge">INT-09</span></td></tr>
+      <tr><td>9.1</td><td>Inovação 25%, viabilidade técnica 25%, jogabilidade 30%, apresentação 20%.</td><td>A banca da UC usa os mesmos critérios e pesos (componente B).</td><td><span class="badge r">Banca</span></td></tr>
+      <tr><td>14 · 15</td><td>IA generativa permitida; plágio e violação de licenças desclassificam.</td><td>Registro de uso de IA, inventário de licenças, SBOM e varredura de segredos.</td><td><span class="badge">INT-05</span></td></tr>
+      <tr><td>16</td><td>Tratamento de dados pessoais conforme a LGPD.</td><td>O jogo não coleta dado pessoal; telemetria só anônima e agregada.</td><td><span class="badge">INT-08</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="callout">
+    <span class="ttl">Leitura atenta do item 9.3</span>
+    <p>No concurso, a nota da Comissão escolhe os <b>finalistas</b>; o <b>campeão</b> é o vídeo finalista com maior engajamento nas redes. Na UC não existe critério de engajamento: a banca atribui nota pelos quatro critérios do item 9.1 e nada mais.</p>
+  </div>
+</section>
+
+<!-- 03 -->
+<section class="block" id="s3">
+  <div class="block-head"><span class="num">03</span><h2>Squad e papéis</h2></div>
+  <p class="block-sub">Quatro integrantes, quatro papéis com dono. Dono não quer dizer exclusividade: todos programam, revisam pull requests e aparecem no histórico do Git.</p>
+
+  <div class="g4">
+    <div class="card accent"><span class="tag">Papel 1</span><h4>Produto e Game Design</h4><p>Responde pelo GDD, pelo backlog e pela jogabilidade. Conduz os testes de jogo com usuários e o roteiro do vídeo.</p><p><span class="badge">INT-02</span> <span class="badge">INT-10</span></p></div>
+    <div class="card blue"><span class="tag">Papel 2</span><h4>Desenvolvimento e Qualidade</h4><p>Responde pela arquitetura do código do jogo e pela pirâmide de testes: unidade, integração e regressão de ponta a ponta.</p><p><span class="badge">INT-04</span></p></div>
+    <div class="card green"><span class="tag">Papel 3</span><h4>Plataforma e Release</h4><p>Responde pelos workflows do GitHub Actions, pelo empacotamento das releases, pelos ambientes no GitHub Pages e pela estratégia de entrega e rollback.</p><p><span class="badge">INT-03</span> <span class="badge">INT-06</span> <span class="badge">INT-07</span></p></div>
+    <div class="card violet"><span class="tag">Papel 4</span><h4>SRE e Segurança</h4><p>Responde por observabilidade, alertas, métricas DORA, varredura de segredos e de vulnerabilidades, licenças e triagem como código.</p><p><span class="badge">INT-05</span> <span class="badge">INT-08</span> <span class="badge">INT-09</span></p></div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <h4>Regras de formação</h4>
+      <ul>
+        <li>Squads de <b>4 integrantes</b>, registrados em <code>SQUAD.md</code> até 02/10/2026, com nome, RA e papel.</li>
+        <li>Integrantes não mudam depois do registro, como no item 5.2 do regulamento.</li>
+        <li>Se a turma não fechar em múltiplos de 4, o professor autoriza squads de 3 ou 5 <b>só para a avaliação</b>; esses squads não podem se inscrever no concurso.</li>
+        <li>Cada integrante precisa de commits e pull requests aprovados em pelo menos <b>3 integráveis</b>.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Se o squad decidir se inscrever no concurso</h4>
+      <ul>
+        <li>Todos os 4 com 18 anos completos na data da inscrição, CPF válido e residência no Brasil (item 4).</li>
+        <li>Inscrição pelo formulário oficial da landing page, entre 21/09 e 21/10/2026 (itens 3.1 e 6.1).</li>
+        <li>Vídeo publicado no Instagram em colaboração com <code>@framework.digital</code> e com o perfil do Programadores do Amanhã (item 6.3 c).</li>
+        <li>Leiam antes as cláusulas de propriedade intelectual e de uso de imagem (itens 12 e 13).</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 04 -->
+<section class="block" id="s4">
+  <div class="block-head"><span class="num">04</span><h2>Arquitetura de referência da esteira</h2></div>
+  <p class="block-sub">O caminho mínimo de um commit até a mão do jurado, inteiro dentro do GitHub: nada de nuvem paga, máquina virtual ou contêiner. Na máquina do aluno bastam Git, Node.js e um editor. Ferramentas equivalentes são aceitas se o squad justificar a troca no relatório técnico.</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 1000 470" role="img" aria-label="Fluxo da esteira: desenvolvimento, Git, GitHub Actions, release versionada, homologação, aprovação, produção com canário, URL pública, monitoramento e triagem">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#3b3b44"/></marker></defs>
+      <g font-family="Inter,Arial,sans-serif" font-size="13" fill="#16161a">
+        <rect x="10" y="20" width="210" height="96" rx="9" fill="#efe8fa" stroke="#6a3fb5"/>
+        <text x="115" y="46" text-anchor="middle" font-weight="700">1 · Desenvolvimento</text>
+        <text x="115" y="68" text-anchor="middle">Antigravity + Stitch (MCP)</text>
+        <text x="115" y="88" text-anchor="middle">Git + Node.js locais</text>
+        <text x="115" y="106" text-anchor="middle" fill="#6b6b76" font-size="12">Aulas 04 e 05</text>
+
+        <rect x="265" y="20" width="210" height="96" rx="9" fill="#fffdf8" stroke="#3b3b44"/>
+        <text x="370" y="46" text-anchor="middle" font-weight="700">2 · Git</text>
+        <text x="370" y="68" text-anchor="middle">feature/* → PR → main</text>
+        <text x="370" y="88" text-anchor="middle">revisão + tag vX.Y.Z</text>
+        <text x="370" y="106" text-anchor="middle" fill="#6b6b76" font-size="12">Aula 01</text>
+
+        <rect x="520" y="20" width="210" height="96" rx="9" fill="#e8f0fb" stroke="#1f5fbf"/>
+        <text x="625" y="46" text-anchor="middle" font-weight="700">3 · GitHub Actions (CI)</text>
+        <text x="625" y="68" text-anchor="middle">lint · testes · build</text>
+        <text x="625" y="88" text-anchor="middle">gitleaks · npm audit · SBOM</text>
+        <text x="625" y="106" text-anchor="middle" fill="#6b6b76" font-size="12">Aulas 06 e 07</text>
+
+        <rect x="775" y="20" width="210" height="96" rx="9" fill="#fffdf8" stroke="#3b3b44"/>
+        <text x="880" y="46" text-anchor="middle" font-weight="700">4 · Release versionada</text>
+        <text x="880" y="68" text-anchor="middle">build.zip + SHA-256</text>
+        <text x="880" y="88" text-anchor="middle">artefato imutável</text>
+        <text x="880" y="106" text-anchor="middle" fill="#6b6b76" font-size="12">GitHub Releases</text>
+
+        <line x1="220" y1="68" x2="261" y2="68" stroke="#3b3b44" stroke-width="2" marker-end="url(#ar)"/>
+        <line x1="475" y1="68" x2="516" y2="68" stroke="#3b3b44" stroke-width="2" marker-end="url(#ar)"/>
+        <line x1="730" y1="68" x2="771" y2="68" stroke="#3b3b44" stroke-width="2" marker-end="url(#ar)"/>
+        <path d="M880,116 L880,150 L115,150 L115,180" fill="none" stroke="#3b3b44" stroke-width="2" marker-end="url(#ar)"/>
+
+        <rect x="10" y="184" width="210" height="96" rx="9" fill="#fdf1dc" stroke="#a96400"/>
+        <text x="115" y="210" text-anchor="middle" font-weight="700">5 · Homologação</text>
+        <text x="115" y="232" text-anchor="middle">GitHub Pages /hml/</text>
+        <text x="115" y="252" text-anchor="middle">E2E Playwright</text>
+        <text x="115" y="270" text-anchor="middle" fill="#6b6b76" font-size="12">deploy automático</text>
+
+        <rect x="265" y="184" width="210" height="96" rx="9" fill="#fffdf8" stroke="#3b3b44"/>
+        <text x="370" y="210" text-anchor="middle" font-weight="700">6 · Aprovação</text>
+        <text x="370" y="232" text-anchor="middle">environment "producao"</text>
+        <text x="370" y="252" text-anchor="middle">revisor obrigatório registrado</text>
+        <text x="370" y="270" text-anchor="middle" fill="#6b6b76" font-size="12">gate manual</text>
+
+        <rect x="520" y="184" width="210" height="96" rx="9" fill="#e5f3ea" stroke="#1d7a46"/>
+        <text x="625" y="210" text-anchor="middle" font-weight="700">7 · Produção</text>
+        <text x="625" y="232" text-anchor="middle">/releases/&lt;sha&gt;/ + rollout.json</text>
+        <text x="625" y="252" text-anchor="middle">canário ou azul-verde</text>
+        <text x="625" y="270" text-anchor="middle" fill="#6b6b76" font-size="12">rollback = trocar o ponteiro</text>
+
+        <rect x="775" y="184" width="210" height="96" rx="9" fill="#e5f3ea" stroke="#1d7a46"/>
+        <text x="880" y="210" text-anchor="middle" font-weight="700">8 · URL pública</text>
+        <text x="880" y="232" text-anchor="middle">usuario.github.io/jogo</text>
+        <text x="880" y="252" text-anchor="middle">+ build.zip offline</text>
+        <text x="880" y="270" text-anchor="middle" fill="#6b6b76" font-size="12">mesmo artefato da release</text>
+
+        <line x1="220" y1="232" x2="261" y2="232" stroke="#3b3b44" stroke-width="2" marker-end="url(#ar)"/>
+        <line x1="475" y1="232" x2="516" y2="232" stroke="#3b3b44" stroke-width="2" marker-end="url(#ar)"/>
+        <line x1="730" y1="232" x2="771" y2="232" stroke="#3b3b44" stroke-width="2" marker-end="url(#ar)"/>
+
+        <rect x="265" y="340" width="465" height="96" rx="9" fill="#fbe7e5" stroke="#b3261e"/>
+        <text x="497" y="366" text-anchor="middle" font-weight="700">9 · Monitoramento como código</text>
+        <text x="497" y="388" text-anchor="middle">workflow agendado sonda produção e homologação</text>
+        <text x="497" y="408" text-anchor="middle">alertas viram Issues · painel /status/ · métricas DORA</text>
+        <text x="497" y="426" text-anchor="middle" fill="#6b6b76" font-size="12">nenhum dado pessoal do jogador (LGPD)</text>
+
+        <rect x="775" y="340" width="210" height="96" rx="9" fill="#fffdf8" stroke="#e3142f" stroke-width="2"/>
+        <text x="880" y="366" text-anchor="middle" font-weight="700">10 · Triagem como código</text>
+        <text x="880" y="388" text-anchor="middle">abre? funciona? ≤ 90 s?</text>
+        <text x="880" y="408" text-anchor="middle">pacote + SHA-256</text>
+        <text x="880" y="426" text-anchor="middle" fill="#6b6b76" font-size="12">AVA e Drive</text>
+
+        <line x1="625" y1="280" x2="625" y2="336" stroke="#3b3b44" stroke-width="2" marker-end="url(#ar)"/>
+        <line x1="880" y1="280" x2="880" y2="336" stroke="#3b3b44" stroke-width="2" marker-end="url(#ar)"/>
+        <path d="M265,388 L115,388 L115,284" fill="none" stroke="#b3261e" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ar)"/>
+        <text x="190" y="378" text-anchor="middle" fill="#b3261e" font-size="12">feedback</text>
+      </g>
+    </svg>
+    <figcaption>Figura 1 · Esteira de referência. A seta tracejada é o ciclo de feedback: alertas e métricas voltam para o squad e orientam a próxima mudança que entra na esteira.</figcaption>
+  </figure>
+
+  <div class="g3">
+    <div class="card"><h4>Um artefato, vários ambientes</h4><p>O <code>build.zip</code> gerado no CI é o mesmo que vai para homologação e para produção. Nada é recompilado entre um ambiente e outro: o deploy de produção baixa o artefato da execução que passou em homologação.</p></div>
+    <div class="card"><h4>Tudo no GitHub, sem custo</h4><p>Os jobs rodam nos runners hospedados do GitHub (<code>ubuntu-latest</code>) e os ambientes ficam no GitHub Pages: <code>/hml/</code> para homologação e a raiz para produção. No plano gratuito, o Pages exige <b>repositório público</b>, o que também facilita o acesso do jurado e do professor.</p></div>
+    <div class="card"><h4>Stack do jogo</h4><p>Livre, desde que gere um site estático: HTML5/Canvas, Phaser ou export Web do Godot (sem threads, porque o Pages não permite configurar cabeçalhos HTTP). Recomendação: JavaScript ou TypeScript, que simplificam os testes com Vitest e Playwright.</p></div>
+  </div>
+</section>
+
+<!-- 05 -->
+<section class="block" id="s5">
+  <div class="block-head"><span class="num">05</span><h2>Os integráveis</h2></div>
+  <p class="block-sub">Dez entregas que se encaixam umas nas outras: cada integrável precisa funcionar sozinho e também integrado à esteira. Juntos, valem 70% da nota (componente A). Os pesos abaixo são percentuais dentro do componente A.</p>
+
+  <div class="tbl-scroll"><table class="data">
+    <thead><tr><th>ID</th><th>Integrável</th><th>Evidência principal</th><th>Prazo</th><th>Peso</th></tr></thead>
+    <tbody>
+      <tr><td><b>INT-01</b></td><td>Repositório e fluxo Git</td><td>Histórico, PRs revisados, tags, <code>SQUAD.md</code></td><td>05/10</td><td>10%</td></tr>
+      <tr><td><b>INT-02</b></td><td>GDD como código</td><td><code>docs/gdd.md</code> → <code>GDD.pdf</code> gerado pela pipeline</td><td>05/10</td><td>8%</td></tr>
+      <tr><td><b>INT-03</b></td><td>Pipeline CI/CD no GitHub Actions</td><td><code>.github/workflows/esteira.yml</code> + execução verde a partir de clone limpo</td><td>05/10</td><td>15%</td></tr>
+      <tr><td><b>INT-04</b></td><td>Testes automatizados</td><td>Relatórios JUnit, cobertura e E2E do Playwright</td><td>09/10</td><td>12%</td></tr>
+      <tr><td><b>INT-05</b></td><td>Segurança, licenças e uso de IA</td><td>gitleaks, <code>npm audit</code>, SBOM, <code>THIRD_PARTY.md</code>, <code>AI-USAGE.md</code></td><td>09/10</td><td>10%</td></tr>
+      <tr><td><b>INT-06</b></td><td>Release versionada e empacotada</td><td><code>build.zip</code> + SHA-256, <code>version.json</code>, GitHub Release</td><td>05/10</td><td>10%</td></tr>
+      <tr><td><b>INT-07</b></td><td>Ambientes, entrega progressiva e rollback</td><td><code>gh-pages</code> com <code>/hml/</code> e <code>/releases/</code>, <code>rollout.json</code>, rollback cronometrado</td><td>09/10</td><td>12%</td></tr>
+      <tr><td><b>INT-08</b></td><td>Monitoramento, alertas e métricas DORA</td><td><code>monitor.yml</code>, 2 alertas como Issues, painel <code>/status/</code>, relatório DORA</td><td>09/10</td><td>10%</td></tr>
+      <tr><td><b>INT-09</b></td><td>Build pública e pacote de submissão</td><td><code>triagem.sh</code> verde, URL pública, <code>build.zip</code>, manifesto SHA-256</td><td>09/10</td><td>8%</td></tr>
+      <tr><td><b>INT-10</b></td><td>Vídeo pitch e relatório técnico</td><td><code>pitch.mp4</code> (≤ 90 s) e relatório final com retrospectiva</td><td>09/10</td><td>5%</td></tr>
+      <tr><td colspan="4" style="text-align:right"><b>Total do componente A</b></td><td><b>100%</b></td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="tabs" role="tablist">
+    <button type="button" class="on" data-pane="i01">01</button>
+    <button type="button" data-pane="i02">02</button>
+    <button type="button" data-pane="i03">03</button>
+    <button type="button" data-pane="i04">04</button>
+    <button type="button" data-pane="i05">05</button>
+    <button type="button" data-pane="i06">06</button>
+    <button type="button" data-pane="i07">07</button>
+    <button type="button" data-pane="i08">08</button>
+    <button type="button" data-pane="i09">09</button>
+    <button type="button" data-pane="i10">10</button>
+  </div>
+  <div class="tabpanes">
+
+    <div class="tabpane on" id="i01">
+      <h3>INT-01 · Repositório e fluxo Git <span class="badge">10%</span></h3>
+      <p class="lead">Rastreabilidade: qualquer linha em produção precisa levar a um commit, a um pull request e a uma pessoa.</p>
+      <div class="g2">
+        <div class="card blue"><h4>Requisitos mínimos</h4><ul>
+          <li>Repositório único, com os 4 integrantes como colaboradores e o professor com acesso de leitura.</li>
+          <li>Branch <code>main</code> protegida: merge só por pull request, com 1 revisão e CI verde.</li>
+          <li>Estratégia de branching documentada no <code>README.md</code> (trunk-based com <code>feature/*</code> curtas, ou GitHub Flow).</li>
+          <li>Commits no padrão Conventional Commits (<code>feat:</code>, <code>fix:</code>, <code>ci:</code>…).</li>
+          <li>Versionamento semântico com tags anotadas: <code>v0.1.0</code> na prévia de 05/10, <code>v1.0.0</code> na entrega.</li>
+          <li><code>SQUAD.md</code> com nome, RA e papel de cada integrante; <code>.gitignore</code> sem builds nem segredos.</li>
+        </ul></div>
+        <div class="card green"><h4>Critério de aceite</h4><ul>
+          <li>Pelo menos 10 pull requests revisados por alguém diferente do autor.</li>
+          <li>Cada integrante com commits em 3 ou mais integráveis.</li>
+          <li><code>git log --oneline v0.1.0..v1.0.0</code> conta uma história legível.</li>
+        </ul>
+        <p><b>Plano de ensino:</b> critérios 2 e 12 · <b>Aulas:</b> 01</p></div>
+      </div>
+    </div>
+
+    <div class="tabpane" id="i02">
+      <h3>INT-02 · GDD como código <span class="badge">8%</span></h3>
+      <p class="lead">O documento de design entra na esteira como qualquer outro artefato: versionado, revisado por PR e publicado automaticamente.</p>
+      <div class="g2">
+        <div class="card blue"><h4>Conteúdo obrigatório (item 6.3 a)</h4><ul>
+          <li><b>Premissa</b>: o problema de acesso à educação em tecnologia que o jogo ataca e o público-alvo.</li>
+          <li><b>Gênero</b> e plataforma (web desktop, web mobile ou ambos).</li>
+          <li><b>Mecânicas-core</b>: loop principal, condição de vitória e derrota, progressão e o que o jogador aprende em cada fase.</li>
+          <li><b>Referências</b>: jogos, artigos e materiais que inspiraram o projeto, com autoria e licença.</li>
+          <li>Wireframes ou telas do Stitch (Aula 04) para menu, HUD e tela de fim.</li>
+          <li>Seção "Esteira": diagrama da pipeline do squad e link do repositório.</li>
+        </ul></div>
+        <div class="card green"><h4>Critério de aceite</h4><ul>
+          <li><code>docs/gdd.md</code> no repositório, convertido em <code>GDD.pdf</code> por um estágio da pipeline (Pandoc ou equivalente).</li>
+          <li>O PDF é artefato arquivado do build e abre sem erro (<code>pdfinfo</code> passa).</li>
+          <li>Versão e data do GDD batem com a tag de release.</li>
+        </ul>
+        <p><b>Plano de ensino:</b> critérios 9 e 10 · <b>Aulas:</b> 04 e 07</p></div>
+      </div>
+    </div>
+
+    <div class="tabpane" id="i03">
+      <h3>INT-03 · Pipeline CI/CD no GitHub Actions <span class="badge">15%</span></h3>
+      <p class="lead">Pipeline como código: o workflow mora em <code>.github/workflows/</code>, roda a cada push e pull request, e qualquer pessoa reproduz o build a partir de um clone limpo. Os conceitos da Aula 06 (estágios, gates, artefatos) valem igual; muda a ferramenta.</p>
+      <div class="g2">
+        <div class="card blue"><h4>Jobs mínimos (todos em <code>ubuntu-latest</code>)</h4><ol>
+          <li><b><code>ci</code></b>: checkout, <code>npm ci</code> com lockfile, lint, testes de unidade e integração com JUnit e cobertura.</li>
+          <li>Ainda no <code>ci</code>: segurança (gitleaks, <code>npm audit</code>, SBOM; ver INT-05), build do jogo e do <code>GDD.pdf</code>, empacotamento do <code>build.zip</code> (ver INT-06).</li>
+          <li><b><code>deploy-hml</code></b>: publica o artefato em <code>/hml/</code> no GitHub Pages e roda a regressão E2E contra essa URL.</li>
+          <li><b><code>deploy-prd</code></b>: environment <code>producao</code> com revisor obrigatório, publicação da release, entrega progressiva, smoke e rollback (ver INT-07).</li>
+        </ol></div>
+        <div class="card green"><h4>Critério de aceite</h4><ul>
+          <li>Disparo automático por <code>push</code> e <code>pull_request</code>; nenhum passo manual além da aprovação do environment de produção.</li>
+          <li>Status check do job <code>ci</code> obrigatório na proteção da branch <code>main</code>.</li>
+          <li>Credenciais só em <i>secrets</i> e <i>variables</i>; <code>permissions</code> mínimas declaradas por job.</li>
+          <li>Relatórios, <code>GDD.pdf</code> e <code>build.zip</code> publicados como artefatos de cada execução.</li>
+          <li>Tempo total do push até homologação ≤ 15 minutos.</li>
+        </ul>
+        <p><b>Plano de ensino:</b> critérios 1 e 3 · <b>Aulas:</b> 06 (conceitos de pipeline) e 07 (GitHub Actions)</p></div>
+      </div>
+    </div>
+
+    <div class="tabpane" id="i04">
+      <h3>INT-04 · Testes automatizados <span class="badge">12%</span></h3>
+      <p class="lead">Jogo também se testa. A regra de pontuação, a progressão de fase e a validação do conteúdo educativo são lógica pura, e lógica pura tem teste de unidade.</p>
+      <div class="g2">
+        <div class="card blue"><h4>Pirâmide exigida</h4><ul>
+          <li><b>Unidade</b> (Vitest ou Jest): regras do jogo separadas da renderização; cobertura ≥ 70% no módulo <code>src/core/</code>.</li>
+          <li><b>Integração</b>: carregamento e validação de esquema do conteúdo (fases, perguntas, textos em JSON); um JSON inválido quebra o build.</li>
+          <li><b>Regressão de ponta a ponta</b> (Playwright): abrir o jogo, iniciar partida, completar a primeira fase e ver a tela de fim. Roda contra homologação a cada deploy.</li>
+          <li><b>Smoke de produção</b>: o mesmo teste, reduzido, contra a URL pública depois do deploy.</li>
+        </ul></div>
+        <div class="card green"><h4>Critério de aceite</h4><ul>
+          <li>Pelo menos 15 testes de unidade, 3 de integração e 2 cenários E2E.</li>
+          <li>Teste falhando bloqueia o merge (gate no PR).</li>
+          <li>Pelo menos um bug real encontrado por teste e corrigido com o teste de regressão correspondente, citado no relatório.</li>
+          <li>Se houver conteúdo gerado com Opal ou AI Studio (Aula 07), um <code>eval/golden.jsonl</code> valida o formato antes de entrar no jogo.</li>
+        </ul>
+        <p><b>Plano de ensino:</b> critério 5 · <b>Aulas:</b> 06 e 07</p></div>
+      </div>
+    </div>
+
+    <div class="tabpane" id="i05">
+      <h3>INT-05 · Segurança, licenças e uso de IA <span class="badge">10%</span></h3>
+      <p class="lead">O regulamento desclassifica por plágio e por violação de licença, inclusive em conteúdo gerado com IA (itens 14 e 15). A esteira precisa provar a origem de tudo o que vai no jogo.</p>
+      <div class="g2">
+        <div class="card blue"><h4>Requisitos mínimos</h4><ul>
+          <li><b>gitleaks</b> na pipeline (e, se possível, no pre-commit): segredo detectado quebra o build.</li>
+          <li><b><code>npm audit</code></b> nas dependências de produção: falha com vulnerabilidade crítica; Dependabot ativado no repositório.</li>
+          <li><b>SBOM</b> do projeto com <code>npm sbom</code> (formato CycloneDX ou SPDX), anexado a cada release.</li>
+          <li><code>THIRD_PARTY.md</code>: toda biblioteca, sprite, som, fonte e música, com autor, link e licença.</li>
+          <li><code>AI-USAGE.md</code>: ferramenta, finalidade, prompt resumido, o que foi aceito e o que foi revisado por humano (modelo na seção 06).</li>
+          <li><code>LICENSE</code> do próprio projeto.</li>
+        </ul></div>
+        <div class="card green"><h4>Critério de aceite</h4><ul>
+          <li>Nenhum ativo sem licença compatível com uso público.</li>
+          <li>Relatórios do gitleaks e do <code>npm audit</code> e o SBOM disponíveis como artefatos do build.</li>
+          <li><code>AI-USAGE.md</code> coerente com o histórico do Git.</li>
+        </ul>
+        <div class="callout danger" style="margin:0"><span class="ttl">Eliminatório</span><p>Plágio ou ativo protegido usado sem autorização zera a avaliação do squad, como no item 14.3. Credencial real commitada zera o INT-05 e precisa ser revogada.</p></div>
+        <p style="margin-top:.8em"><b>Plano de ensino:</b> critérios 3 e 8 · <b>Aulas:</b> 05, 06 e 07</p></div>
+      </div>
+    </div>
+
+    <div class="tabpane" id="i06">
+      <h3>INT-06 · Release versionada e empacotada <span class="badge">10%</span></h3>
+      <p class="lead">Sem contêiner, o artefato imutável da esteira é o pacote do site estático: construído uma vez, identificado pelo commit e promovido de ambiente em ambiente.</p>
+      <div class="g2">
+        <div class="card blue"><h4>Requisitos mínimos</h4><ul>
+          <li>Build reprodutível: <code>npm ci</code> + <code>npm run build</code> geram a pasta <code>dist/</code> sem nenhum passo manual.</li>
+          <li><code>dist/version.json</code> com versão SemVer, SHA do commit e data do build; a versão aparece discretamente na tela inicial do jogo.</li>
+          <li><code>build.zip</code> + <code>build.zip.sha256</code> gerados no CI e publicados como artefato da execução.</li>
+          <li>Cada tag <code>vX.Y.Z</code> gera uma <b>GitHub Release</b> com <code>build.zip</code>, checksum, SBOM e <code>GDD.pdf</code> anexados e notas de versão (podem ser geradas com Opal ou AI Studio, como na Aula 07, desde que revisadas).</li>
+          <li>O <code>build.zip</code> roda offline: descompactar e abrir <code>index.html</code> (ou <code>npx serve</code>) basta para jogar.</li>
+        </ul></div>
+        <div class="card green"><h4>Critério de aceite</h4><ul>
+          <li>Dois builds do mesmo commit geram o mesmo conteúdo em <code>dist/</code> (exceto a data no <code>version.json</code>).</li>
+          <li>O hash do <code>build.zip</code> em produção bate com o da release.</li>
+          <li>Tamanho do pacote abaixo de 25 MB, para carregar rápido na web e no celular.</li>
+        </ul>
+        <p><b>Plano de ensino:</b> critérios 3 e 4 (parcial) · <b>Aulas:</b> 01, 06 e 07</p></div>
+      </div>
+    </div>
+
+    <div class="tabpane" id="i07">
+      <h3>INT-07 · Ambientes, entrega progressiva e rollback <span class="badge">12%</span></h3>
+      <p class="lead">Produção e homologação no GitHub Pages, cada release em sua própria pasta, e um arquivo de controle que decide qual versão o jogador recebe. Rollback é trocar um ponteiro, não recompilar.</p>
+      <div class="g2">
+        <div class="card blue"><h4>Requisitos mínimos</h4><ul>
+          <li>Branch <code>gh-pages</code> como origem do Pages, escrita <b>só</b> pela pipeline, com esta estrutura:
+            <ul><li><code>/hml/</code>: último build da <code>main</code> aprovado no CI;</li>
+            <li><code>/releases/&lt;sha&gt;/</code>: cada versão publicada em produção, nunca sobrescrita;</li>
+            <li><code>/index.html</code>: carregador que lê o <code>rollout.json</code> e redireciona para a release certa;</li>
+            <li><code>/rollout.json</code>: <code>estavel</code>, <code>anterior</code>, <code>canario</code> e <code>percentual</code>.</li></ul></li>
+          <li><b>Uma</b> estratégia de entrega, à escolha do squad:
+            <ul><li><b>Canário</b>: a nova versão recebe cerca de 10% das sessões; depois do smoke e de um período de observação, vai a 100%.</li>
+            <li><b>Azul-verde</b>: a nova versão fica publicada e testada na sua pasta; a virada é a troca de <code>estavel</code> de uma vez.</li></ul></li>
+          <li>O jogador que caiu numa versão continua nela durante a sessão (escolha guardada no navegador).</li>
+          <li>Rollback automatizado: se o smoke de produção falhar, a pipeline devolve <code>estavel</code> para <code>anterior</code>. Também existe um workflow <code>rollback.yml</code> acionável à mão (<code>workflow_dispatch</code>).</li>
+        </ul></div>
+        <div class="card green"><h4>Critério de aceite (na banca)</h4><ul>
+          <li>O professor pede uma versão com defeito proposital e cronometra.</li>
+          <li>O squad detecta pelo alerta ou pelo smoke e faz rollback em <b>menos de 5 minutos</b>, contando a propagação do Pages, sem a URL sair do ar.</li>
+          <li>O histórico de commits do <code>gh-pages</code> mostra cada mudança no <code>rollout.json</code>, com quem disparou e por quê.</li>
+        </ul>
+        <p><b>Plano de ensino:</b> critérios 1, 4 (parcial) e 6 · <b>Aulas:</b> 01, 06 e 07</p></div>
+      </div>
+    </div>
+
+    <div class="tabpane" id="i08">
+      <h3>INT-08 · Monitoramento, alertas e métricas DORA <span class="badge">10%</span></h3>
+      <p class="lead">Se o link do jogo cair na véspera da triagem, o squad precisa saber antes do jurado. Sem servidor próprio, o monitoramento também é código e roda no GitHub Actions.</p>
+      <div class="g2">
+        <div class="card blue"><h4>Requisitos mínimos</h4><ul>
+          <li>Workflow <code>monitor.yml</code> agendado (<code>schedule</code>, a cada 15 minutos) que sonda produção e homologação: código HTTP, tempo de resposta e a versão servida (<code>version.json</code>).</li>
+          <li>Resultados acumulados em <code>status/sondas.csv</code> na branch <code>observabilidade</code>, para não disparar uma publicação do Pages a cada sonda.</li>
+          <li>Dois alertas, no mínimo, abertos como <b>Issue</b> com o label <code>alerta</code> (o GitHub notifica por e-mail e no celular): <code>JogoForaDoAr</code> (resposta diferente de 200) e <code>LatenciaAlta</code> (mais de 2 s). O alerta se fecha sozinho quando a sonda volta ao normal.</li>
+          <li>Painel em <code>/status/</code> no próprio Pages: disponibilidade, latência, versão em produção, percentual do canário e as métricas DORA.</li>
+          <li>Opcional: contagem anônima de partidas e fases concluídas, sem identificar o jogador.</li>
+        </ul></div>
+        <div class="card green"><h4>Relatório DORA</h4><ul>
+          <li>As quatro métricas do período, calculadas por script (<code>scripts/dora.mjs</code>) a partir dos dados do GitHub: frequência de deploy (execuções do <code>deploy-prd</code>), lead time de mudança (commit até produção), taxa de falha de mudança (deploys seguidos de rollback) e tempo de recuperação (abertura até fechamento das Issues de alerta).</li>
+          <li>Comparação com a linha de base da Carparts: lead time de 11 dias.</li>
+          <li>Uma decisão de melhoria tomada a partir das métricas, e o efeito dela.</li>
+        </ul>
+        <div class="callout warn" style="margin:0"><span class="ttl">Limite conhecido</span><p>Execuções agendadas do GitHub Actions podem atrasar alguns minutos em horários de pico. Registrem isso no relatório: faz parte de entender a ferramenta de monitoramento que se usa.</p></div>
+        <p style="margin-top:.8em"><b>Plano de ensino:</b> critérios 7 e 11 · <b>Aulas:</b> 01 e 07</p></div>
+      </div>
+    </div>
+
+    <div class="tabpane" id="i09">
+      <h3>INT-09 · Build pública e pacote de submissão <span class="badge">8%</span></h3>
+      <p class="lead">A triagem do concurso pergunta se os arquivos abrem e funcionam. O squad responde antes, com um job que faz as mesmas perguntas.</p>
+      <div class="g2">
+        <div class="card blue"><h4>O pacote (pasta <code>submissao/</code>)</h4><ul>
+          <li><code>GDD.pdf</code></li>
+          <li><code>LINK_DO_JOGO.txt</code> com a URL pública da produção.</li>
+          <li><code>build.zip</code>: a pasta <code>dist/</code> com <code>LEIA-ME.txt</code> explicando como rodar offline.</li>
+          <li><code>pitch.mp4</code> (INT-10).</li>
+          <li><code>MANIFESTO.sha256</code> com o hash de cada arquivo.</li>
+        </ul></div>
+        <div class="card green"><h4>O job <code>triagem.sh</code> confere</h4><ul>
+          <li>URL pública responde 200 e passa no smoke do Playwright.</li>
+          <li><code>GDD.pdf</code> abre (<code>pdfinfo</code>) e tem as 4 seções obrigatórias.</li>
+          <li><code>pitch.mp4</code> dura no máximo 90 segundos (<code>ffprobe</code>).</li>
+          <li><code>build.zip</code> descompacta e contém <code>index.html</code>.</li>
+          <li><code>SQUAD.md</code> lista exatamente 4 integrantes.</li>
+          <li>A data atual é anterior ao prazo configurado.</li>
+        </ul>
+        <p><b>Plano de ensino:</b> critério 8 · <b>Aulas:</b> 06</p></div>
+      </div>
+      <div class="callout warn"><span class="ttl">Para quem for se inscrever</span><p>O mesmo pacote vai para a pasta do Google Drive do responsável pelo squad, compartilhada com acesso total ao e-mail indicado no item 6.4 do regulamento. Confiram o compartilhamento abrindo a pasta em uma janela anônima com outra conta.</p></div>
+    </div>
+
+    <div class="tabpane" id="i10">
+      <h3>INT-10 · Vídeo pitch e relatório técnico <span class="badge">5%</span></h3>
+      <p class="lead">Comunicar para dois públicos: o jurado do concurso, em 90 segundos, e os "investidores" da banca, em um relatório técnico.</p>
+      <div class="g2">
+        <div class="card blue"><h4>Vídeo (≤ 90 s, item 6.3 c)</h4><ul>
+          <li>Proposta de gamificação, conceito e diferencial da solução.</li>
+          <li>Gameplay real capturado da build de produção.</li>
+          <li>Trilha e imagens com licença registrada em <code>THIRD_PARTY.md</code>.</li>
+          <li>Legendas, pela acessibilidade.</li>
+        </ul></div>
+        <div class="card green"><h4>Relatório técnico (PDF, até 12 páginas)</h4><ul>
+          <li>Arquitetura da esteira e decisões, com alternativas descartadas.</li>
+          <li>Evidências de cada integrável (prints com data e links de build).</li>
+          <li>Métricas DORA e a retrospectiva: o que funcionou, o que não funcionou e o que mudariam.</li>
+          <li>Contribuição de cada integrante, com links para PRs.</li>
+        </ul>
+        <p><b>Plano de ensino:</b> critérios 9, 10 e 12 · <b>Aulas:</b> 01 e 07</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 -->
+<section class="block" id="s6">
+  <div class="block-head"><span class="num">06</span><h2>Kit de partida</h2></div>
+  <p class="block-sub">Esqueletos para não começar do zero. Eles não passam na avaliação como estão: os <code>TODO</code> são parte do trabalho.</p>
+
+  <div class="tabs" role="tablist">
+    <button type="button" class="on" data-pane="k1">Estrutura</button>
+    <button type="button" data-pane="k2">Workflow</button>
+    <button type="button" data-pane="k3">Rollout</button>
+    <button type="button" data-pane="k4">triagem.sh</button>
+    <button type="button" data-pane="k5">Monitor</button>
+    <button type="button" data-pane="k6">AI-USAGE.md</button>
+  </div>
+  <div class="tabpanes">
+    <div class="tabpane on" id="k1">
+      <div class="codebox"><div class="cbar"><span>estrutura do repositório</span><button type="button" class="cp">copiar</button></div>
+<pre class="code" data-lang="text"><code>jogo-arcade/                # repositório PÚBLICO (exigência do Pages no plano gratuito)
+├── README.md               # como rodar, branching, arquitetura
+├── SQUAD.md                # 4 integrantes: nome, RA, papel
+├── LICENSE
+├── THIRD_PARTY.md          # ativos e bibliotecas de terceiros + licenças
+├── AI-USAGE.md             # registro de uso de IA generativa
+├── .github/
+│   ├── workflows/
+│   │   ├── esteira.yml     # CI + homologação + produção
+│   │   ├── rollback.yml    # workflow_dispatch: volta estavel para anterior
+│   │   └── monitor.yml     # schedule: sondas e alertas
+│   └── dependabot.yml
+├── .gitleaks.toml
+├── package.json / package-lock.json
+├── src/
+│   ├── core/               # regras puras do jogo (testes de unidade, cobertura ≥ 70%)
+│   ├── scenes/             # renderização (Canvas, Phaser…)
+│   └── content/            # fases e perguntas em JSON + schema
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   └── e2e/                # Playwright (smoke.spec.ts + regressão)
+├── docs/
+│   ├── gdd.md              # vira GDD.pdf na pipeline
+│   └── relatorio.md
+├── pages/
+│   ├── index.html          # carregador que lê rollout.json
+│   └── status/index.html   # painel de disponibilidade, versão e DORA
+├── eval/golden.jsonl       # se houver conteúdo gerado com IA
+└── scripts/
+    ├── publicar.sh         # escreve no branch gh-pages (hml, releases/&lt;sha&gt;)
+    ├── rollout.sh          # canário, promoção e rollback no rollout.json
+    ├── dora.mjs            # calcula as 4 métricas pela API do GitHub
+    └── triagem.sh</code></pre></div>
+    </div>
+
+    <div class="tabpane" id="k2">
+      <div class="codebox"><div class="cbar"><span>.github/workflows/esteira.yml · esqueleto</span><button type="button" class="cp">copiar</button></div>
+<pre class="code" data-lang="yaml"><code>name: esteira-jogo
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: esteira-${{ github.ref }}
+  cancel-in-progress: false               # nunca interromper um deploy no meio
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0                  # gitleaks precisa do histórico
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test:ci              # TODO: unidade + integração, cobertura e JUnit em reports/
+      - name: Segredos (gitleaks)
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Dependências e SBOM
+        run: |
+          mkdir -p reports
+          npm audit --omit=dev --audit-level=critical
+          npm sbom --sbom-format cyclonedx &gt; reports/sbom.json
+      - name: Build versionado
+        run: |
+          npm run build &amp;&amp; npm run gdd:pdf
+          printf '{"sha":"%s","build":"%s"}\n' "${GITHUB_SHA::7}" "$(date -u +%FT%TZ)" &gt; dist/version.json   # TODO: incluir a versão SemVer
+          (cd dist &amp;&amp; zip -qr ../build.zip .)
+          sha256sum build.zip &gt; build.zip.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: build-${{ github.sha }}
+          path: |
+            build.zip
+            build.zip.sha256
+            docs/GDD.pdf
+            reports/
+
+  deploy-hml:
+    needs: ci
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write                     # escrever no branch gh-pages
+    environment:
+      name: homologacao
+      url: ${{ vars.SITE_URL }}/hml/
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-${{ github.sha }}
+      - run: ./scripts/publicar.sh hml build.zip          # TODO: descompacta em gh-pages/hml/ e faz push
+      - name: Regressão E2E em homologação
+        run: |
+          npm ci &amp;&amp; npx playwright install --with-deps chromium
+          BASE_URL="${{ vars.SITE_URL }}/hml/" npx playwright test   # TODO: esperar a publicação do Pages (retry)
+
+  deploy-prd:
+    needs: deploy-hml
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    environment:
+      name: producao                      # revisor obrigatório no environment = gate de aprovação
+      url: ${{ vars.SITE_URL }}/
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-${{ github.sha }}
+      - run: ./scripts/publicar.sh release build.zip "${GITHUB_SHA::7}"   # gh-pages/releases/&lt;sha&gt;/
+      - run: ./scripts/rollout.sh canario "${GITHUB_SHA::7}" 10          # TODO: ou azul-verde
+      - name: Smoke em produção com rollback automático
+        run: |
+          npm ci &amp;&amp; npx playwright install --with-deps chromium
+          if ! BASE_URL="${{ vars.SITE_URL }}/releases/${GITHUB_SHA::7}/" npx playwright test tests/e2e/smoke.spec.ts; then
+            ./scripts/rollout.sh rollback
+            exit 1
+          fi
+      # TODO: promover a 100% depois da observação e notificar o squad em caso de falha</code></pre></div>
+      <p>Configurem em <i>Settings → Pages</i> a origem "Deploy from a branch" com o branch <code>gh-pages</code>; em <i>Settings → Environments</i>, os environments <code>homologacao</code> e <code>producao</code> (este com revisor obrigatório); e a variável <code>SITE_URL</code> com o endereço do Pages. Confiram as versões atuais das actions antes de fixá-las.</p>
+    </div>
+
+    <div class="tabpane" id="k3">
+      <div class="codebox"><div class="cbar"><span>rollout.json, carregador e rollout.sh</span><button type="button" class="cp">copiar</button></div>
+<pre class="code" data-lang="js"><code>// pages/rollout.json (no branch gh-pages) — só a pipeline altera este arquivo
+{ "estavel": "a1b2c3d", "anterior": "9f8e7d6", "canario": "c4d5e6f", "percentual": 10 }
+
+// pages/index.html — carregador: decide a versão e redireciona
+&lt;script&gt;
+fetch("rollout.json", { cache: "no-store" })
+  .then(r =&gt; r.json())
+  .then(r =&gt; {
+    let v = null;
+    try { v = localStorage.getItem("versao"); } catch (e) {}
+    const validas = [r.estavel, r.canario].filter(Boolean);
+    if (!validas.includes(v)) {                       // sessão nova ou versão retirada
+      v = (r.canario &amp;&amp; Math.random() * 100 &lt; r.percentual) ? r.canario : r.estavel;
+      try { localStorage.setItem("versao", v); } catch (e) {}
+    }
+    location.replace("releases/" + v + "/");
+  })
+  .catch(() =&gt; { document.body.textContent = "Jogo indisponível no momento."; });
+&lt;/script&gt;
+
+# scripts/rollout.sh — esqueleto (usa jq e git no branch gh-pages)
+#   rollout.sh canario &lt;sha&gt; &lt;percentual&gt;   abre o canário
+#   rollout.sh promover                     canário vira estável (100%)
+#   rollout.sh rollback                     estável volta para anterior, canário sai
+# TODO: checkout de gh-pages, jq para editar rollout.json,
+#       commit "rollout: &lt;ação&gt; &lt;sha&gt; por $GITHUB_ACTOR" e push</code></pre></div>
+      <p>Azul-verde usa os mesmos arquivos: <code>percentual</code> fica em 0 enquanto a versão nova é testada na pasta dela, e a virada é a troca de <code>estavel</code>.</p>
+    </div>
+
+    <div class="tabpane" id="k4">
+      <div class="codebox"><div class="cbar"><span>scripts/triagem.sh · triagem como código</span><button type="button" class="cp">copiar</button></div>
+<pre class="code" data-lang="bash"><code>#!/usr/bin/env bash
+# Reproduz a triagem técnica do item 7.1 antes da entrega.
+set -euo pipefail
+PASTA=${1:-submissao}
+PRAZO=${PRAZO:-"2026-10-09T19:00:00-03:00"}   # TODO: horário de início da aula de 09/10
+falhas=0
+ok(){ echo "  [OK]    $1"; }
+nok(){ echo "  [FALHA] $1"; falhas=$((falhas+1)); }
+
+echo "1. Prazo"
+[ "$(date +%s)" -le "$(date -d "$PRAZO" +%s)" ] &amp;&amp; ok "dentro do prazo" || nok "prazo vencido"
+
+echo "2. Squad completo"
+n=$(grep -cE '^\| *[^|-]' SQUAD.md || true)   # TODO: ajuste ao formato da tabela
+[ "$n" -eq 5 ] &amp;&amp; ok "4 integrantes + cabeçalho" || nok "SQUAD.md com $n linhas"
+
+echo "3. GDD"
+pdfinfo "$PASTA/GDD.pdf" &gt;/dev/null 2&gt;&amp;1 &amp;&amp; ok "GDD.pdf abre" || nok "GDD.pdf ausente ou corrompido"
+
+echo "4. Build pública"
+URL=$(tr -d '[:space:]' &lt; "$PASTA/LINK_DO_JOGO.txt")
+[ "$(curl -s -o /dev/null -w '%{http_code}' "$URL")" = "200" ] &amp;&amp; ok "$URL responde 200" || nok "$URL fora do ar"
+BASE_URL="$URL" npx playwright test tests/e2e/smoke.spec.ts &gt;/dev/null &amp;&amp; ok "smoke passou" || nok "smoke falhou"
+
+echo "5. Build offline"
+unzip -l "$PASTA/build.zip" | grep -q 'index.html' &amp;&amp; ok "build.zip com index.html" || nok "build.zip inválido"
+
+echo "6. Vídeo"
+d=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$PASTA/pitch.mp4" | cut -d. -f1)
+[ "${d:-999}" -le 90 ] &amp;&amp; ok "pitch.mp4 com ${d}s" || nok "pitch.mp4 com ${d}s (máx. 90)"
+
+echo "7. Manifesto"
+(cd "$PASTA" &amp;&amp; sha256sum GDD.pdf LINK_DO_JOGO.txt build.zip pitch.mp4 &gt; MANIFESTO.sha256) &amp;&amp; ok "MANIFESTO.sha256 gerado"
+
+[ "$falhas" -eq 0 ] &amp;&amp; echo "TRIAGEM APROVADA" || { echo "TRIAGEM REPROVADA: $falhas falha(s)"; exit 1; }</code></pre></div>
+    </div>
+
+    <div class="tabpane" id="k5">
+      <div class="codebox"><div class="cbar"><span>.github/workflows/monitor.yml</span><button type="button" class="cp">copiar</button></div>
+<pre class="code" data-lang="yaml"><code>name: monitor
+on:
+  schedule:
+    - cron: "*/15 * * * *"            # UTC; o GitHub pode atrasar execuções agendadas
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  sonda:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: observabilidade             # branch só de dados de monitoramento
+      - name: Sondar produção e homologação
+        id: sonda
+        run: |
+          for alvo in "${{ vars.SITE_URL }}/" "${{ vars.SITE_URL }}/hml/"; do
+            read -r code tempo &lt; &lt;(curl -s -L -o /dev/null -w '%{http_code} %{time_total}' "$alvo")
+            echo "$(date -u +%FT%TZ),$alvo,$code,$tempo" &gt;&gt; status/sondas.csv
+            [ "$code" = "200" ] || echo "fora=$alvo" &gt;&gt; "$GITHUB_OUTPUT"
+          done
+          git config user.name "monitor" &amp;&amp; git config user.email "monitor@users.noreply.github.com"
+          git add status/sondas.csv &amp;&amp; git commit -qm "monitor: sonda" &amp;&amp; git push
+      - name: Alerta JogoForaDoAr
+        if: steps.sonda.outputs.fora != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          aberta=$(gh issue list -R "$GITHUB_REPOSITORY" --label alerta --state open --search "JogoForaDoAr in:title" --json number -q '.[0].number')
+          [ -n "$aberta" ] || gh issue create -R "$GITHUB_REPOSITORY" --label alerta \
+            --title "JogoForaDoAr: ${{ steps.sonda.outputs.fora }}" --body "Sonda sem resposta 200 em $(date -u +%FT%TZ)."
+      # TODO: fechar a Issue quando a sonda voltar a 200 (é o que mede o tempo de recuperação)
+      # TODO: segundo alerta, LatenciaAlta, quando o tempo passar de 2 s</code></pre></div>
+      <div class="callout"><span class="ttl">Antes de ativar</span><p>Criem o branch <code>observabilidade</code> com o arquivo <code>status/sondas.csv</code> (cabeçalho <code>data,alvo,codigo,tempo</code>) e o label <code>alerta</code> nas Issues. Cada integrante deve "assistir" o repositório para receber as notificações.</p></div>
+    </div>
+
+    <div class="tabpane" id="k6">
+      <div class="codebox"><div class="cbar"><span>AI-USAGE.md · modelo</span><button type="button" class="cp">copiar</button></div>
+<pre class="code" data-lang="text"><code># Registro de uso de IA generativa (regulamento, itens 14.1 e 14.2)
+
+| Data  | Ferramenta     | Integrante | Finalidade               | Prompt (resumo)                 | Resultado aceito         | Revisão humana                  | Commit/PR |
+|-------|----------------|------------|--------------------------|---------------------------------|--------------------------|---------------------------------|-----------|
+| 03/10 | Stitch         | Ana        | telas de menu e HUD      | "menu de jogo educativo, 8-bit" | 3 telas exportadas       | ajuste de contraste e fontes    | #4        |
+| 04/10 | Antigravity    | Bruno      | módulo de pontuação      | "função pura de score + testes" | função + 6 testes        | 2 testes reescritos, 1 bug      | #9        |
+| 06/10 | Opal/AI Studio | Carla      | 40 perguntas de lógica   | "perguntas nível iniciante..."  | 32 de 40 aprovadas       | checagem de fatos, golden eval  | #15       |
+
+Declaração: confirmamos que temos direito de uso das ferramentas acima e que o
+resultado foi revisado para evitar plágio e violação de licenças de terceiros.</code></pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 -->
+<section class="block" id="s7">
+  <div class="block-head"><span class="num">07</span><h2>Cronograma</h2></div>
+  <p class="block-sub">Uma semana: uma prévia na segunda-feira e, na sexta, entrega, apresentação e avaliação no mesmo dia. A inscrição no concurso, se o squad quiser, fica para depois.</p>
+  <ul class="timeline">
+    <li><span class="yr">02/10</span><div class="ev"><b>Lançamento e formação dos squads</b><span>Leitura do regulamento, escolha do tema, <code>SQUAD.md</code> e repositório criados, primeiro PR com o esqueleto.</span></div></li>
+    <li><span class="yr">05/10</span><div class="ev"><b>1ª prévia · Esqueleto andando</b><span>Tag <code>v0.1.0</code>: INT-01, INT-02 (GDD v1), INT-03 e INT-06. Uma tela jogável chega à homologação pela pipeline. Avaliação formativa, com devolutiva do professor; não compõe a nota.</span></div></li>
+    <li><span class="yr">06 a 08/10</span><div class="ev"><b>Sprint final</b><span>INT-04, INT-05, INT-07 e INT-08 funcionando; ensaio do rollback cronometrado; gravação do vídeo; <code>triagem.sh</code> aprovado.</span></div></li>
+    <li><span class="yr">09/10</span><div class="ev"><b>Entrega, apresentação e avaliação</b><span>Até o início da aula: tag <code>v1.0.0</code>, pacote de submissão, relatório técnico e ficha de entrega (seção 10) no AVA. Na aula, a banca dos "investidores": 10 minutos de apresentação, 5 de demonstração ao vivo da esteira com falha injetada e rollback, 5 de perguntas.</span></div></li>
+    <li><span class="yr">21/10</span><div class="ev"><b>Prazo do concurso · 23h59 (opcional)</b><span>Squads elegíveis que quiserem se inscrever submetem o pacote pela pasta do Google Drive. Podem usar a devolutiva da banca para melhorar o jogo antes, sempre pela esteira. A URL pública precisa continuar no ar durante a triagem de novembro.</span></div></li>
+  </ul>
+  <div class="callout warn"><span class="ttl">Congelamento de código</span><p>Depois da tag <code>v1.0.0</code>, só entram correções (<code>fix:</code>) que passem por PR e pela pipeline completa. Commit feito à mão no branch <code>gh-pages</code> zera o INT-07.</p></div>
+</section>
+
+<!-- 08 -->
+<section class="block" id="s8">
+  <div class="block-head"><span class="num">08</span><h2>Rubrica e composição da nota</h2></div>
+  <p class="block-sub">Nota final de 0 a 10 = 0,7 × componente A (integráveis) + 0,3 × componente B (banca no formato Arcade), multiplicada pelo fator de contribuição individual.</p>
+
+  <div class="g3">
+    <div class="stat"><b>70%</b><span>Componente A · os 10 integráveis, cada um com nota de 0 a 10 ponderada pelos pesos da seção 05</span></div>
+    <div class="stat"><b>30%</b><span>Componente B · banca com os critérios e pesos do item 9.1 do regulamento</span></div>
+    <div class="stat"><b>× F</b><span>Fator individual de 0,5 a 1,0, conforme a contribuição registrada no Git</span></div>
+  </div>
+
+  <h3>Componente A · níveis por integrável</h3>
+  <div class="tbl-scroll"><table class="data">
+    <thead><tr><th>Integrável</th><th>Básico (3 a 5)</th><th>Proficiente (6 a 8)</th><th>Avançado (9 a 10)</th></tr></thead>
+    <tbody>
+      <tr><td><b>INT-01</b> Git</td><td>Repositório com histórico, mas commits direto na main</td><td>PRs revisados, main protegida, tags SemVer</td><td>Histórico exemplar, Conventional Commits, contribuição equilibrada dos 4</td></tr>
+      <tr><td><b>INT-02</b> GDD</td><td>GDD completo, mas fora da pipeline</td><td>GDD versionado, PDF gerado no build</td><td>GDD vivo, atualizado por PR a cada mudança de mecânica, com telas do Stitch</td></tr>
+      <tr><td><b>INT-03</b> CI</td><td>Pipeline roda, com passos manuais</td><td>Todos os estágios mínimos, credenciais seguras</td><td>≤ 15 min até HML, estágios paralelos, cache de dependências, notificações</td></tr>
+      <tr><td><b>INT-04</b> Testes</td><td>Só testes de unidade</td><td>Pirâmide completa e gate no PR</td><td>Cobertura acima da meta e bug real capturado por teste de regressão</td></tr>
+      <tr><td><b>INT-05</b> Segurança</td><td>Inventário de licenças incompleto</td><td>gitleaks, <code>npm audit</code>, SBOM e registros completos</td><td>Pre-commit, política de vulnerabilidade documentada, IA rastreável por PR</td></tr>
+      <tr><td><b>INT-06</b> Release</td><td>Build funciona, mas montado à mão ou sem versão rastreável</td><td><code>build.zip</code> com checksum e <code>version.json</code>, GitHub Release por tag</td><td>Build reprodutível comprovado, notas de versão revisadas, SBOM e GDD anexados à release</td></tr>
+      <tr><td><b>INT-07</b> Ambientes</td><td>Só produção, publicada sobrescrevendo a versão anterior</td><td><code>/hml/</code> e releases em pastas, estratégia de entrega aplicada</td><td>Rollback automático pela pipeline e &lt; 5 min na banca, sem indisponibilidade</td></tr>
+      <tr><td><b>INT-08</b> Monitoramento</td><td>Sondas rodando, sem alerta nem painel</td><td>2 alertas como Issues, painel <code>/status/</code>, DORA medido</td><td>Alerta disparou e foi tratado de verdade; melhoria orientada por métrica</td></tr>
+      <tr><td><b>INT-09</b> Pacote</td><td>Pacote montado à mão</td><td><code>triagem.sh</code> aprovado, pacote gerado pela pipeline</td><td>Triagem roda agendada e avisa se a URL cair até a banca</td></tr>
+      <tr><td><b>INT-10</b> Comunicação</td><td>Vídeo acima de 90 s ou relatório sem evidências</td><td>Vídeo e relatório completos</td><td>Narrativa clara, legendas e retrospectiva honesta com dados</td></tr>
+    </tbody>
+  </table></div>
+  <p>Integrável não entregue ou que não funciona recebe de 0 a 2.</p>
+
+  <h3>Componente B · banca no formato Framework Arcade</h3>
+  <div class="tbl-scroll"><table class="data">
+    <thead><tr><th>Critério (item 9.1)</th><th>Peso</th><th>O que a banca observa</th></tr></thead>
+    <tbody>
+      <tr><td>Inovação e originalidade</td><td>25%</td><td>A mecânica ensina algo de tecnologia de um jeito que não é só um quiz com pontos? O diferencial está claro?</td></tr>
+      <tr><td>Viabilidade técnica e execução</td><td>25%</td><td>A esteira demonstrada ao vivo: commit → produção, falha injetada, alerta, rollback. Dá para manter e evoluir?</td></tr>
+      <tr><td>Qualidade do protótipo (jogabilidade)</td><td>30%</td><td>Um colega de outra turma joga por 3 minutos sem explicação: entende, se diverte, aprende? Sem bugs bloqueantes?</td></tr>
+      <tr><td>Apresentação</td><td>20%</td><td>Clareza, tempo, divisão da fala entre os 4, qualidade do vídeo e respostas às perguntas.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Relação com a Tabela de Níveis de Desempenho do plano de ensino</h3>
+  <div class="tbl-scroll"><table class="data">
+    <thead><tr><th>Critério do plano</th><th>Evidenciado em</th></tr></thead>
+    <tbody>
+      <tr><td>1. Aplicou conceitos de CI e CD</td><td>INT-03, INT-07</td></tr>
+      <tr><td>2. Utilizou Git para colaboração e rastreabilidade</td><td>INT-01</td></tr>
+      <tr><td>3. Configurou pipeline de build, teste e deploy</td><td>INT-03, INT-05</td></tr>
+      <tr><td>4. Empregou Docker e Kubernetes</td><td>Parcial: artefato imutável (INT-06) e ambientes promovidos (INT-07). Contêineres e orquestração ficam fora desta avaliação</td></tr>
+      <tr><td>5. Implementou automação de testes</td><td>INT-04</td></tr>
+      <tr><td>6. Aplicou blue-green ou canary e rollback</td><td>INT-07 e demonstração na banca</td></tr>
+      <tr><td>7. Integrou monitoramento e observabilidade</td><td>INT-08 (sondas, alertas e painel; sem Prometheus/Grafana)</td></tr>
+      <tr><td>8. Desenvolveu a esteira completa e funcional</td><td>INT-09 (triagem aprovada) e banca</td></tr>
+      <tr><td>9. Trabalhou em equipe para entender requisitos de negócio</td><td>INT-02, seção 02 aplicada ao projeto</td></tr>
+      <tr><td>10. Comunicou de forma clara e visualmente atrativa</td><td>INT-10 e banca (apresentação)</td></tr>
+      <tr><td>11. Demonstrou pensamento analítico e foco em resultados</td><td>INT-08 (DORA) e retrospectiva</td></tr>
+      <tr><td>12. Contribuiu de forma colaborativa e respeitosa</td><td>INT-01 (PRs e revisões) e fator individual</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="g2">
+    <div class="callout danger" style="margin:0"><span class="ttl">Critérios eliminatórios</span><ul style="margin:0">
+      <li>Plágio ou ativo de terceiros sem licença: avaliação do squad zerada (itens 14.3 e 15.1 d).</li>
+      <li>Produção alterada à mão, fora da pipeline: INT-07 zerado.</li>
+      <li>Credencial real no repositório: INT-05 zerado.</li>
+      <li>Pipeline que não roda a partir de clone limpo: INT-03 zerado.</li>
+      <li>Integrável entregue depois do início da aula de 09/10, sem justificativa aceita: nota 0 nesse integrável.</li>
+    </ul></div>
+    <div class="callout" style="margin:0"><span class="ttl">Fator individual (F)</span><p>F = 1,0 quando o integrante tem commits e PRs revisados em 3 ou mais integráveis e participa da banca. F = 0,8 com contribuição em 2 integráveis; F = 0,5 com contribuição em 1 ou nenhum. O professor confere pelo histórico do Git e pode ouvir o squad.</p></div>
+  </div>
+</section>
+
+<!-- 09 -->
+<section class="block" id="s9">
+  <div class="block-head"><span class="num">09</span><h2>IA, licenças, imagem e LGPD</h2></div>
+  <p class="block-sub">As ferramentas de IA das Aulas 04, 05 e 07 podem e devem ser usadas. A responsabilidade pelo que sai delas continua sendo do squad.</p>
+  <div class="g2">
+    <div class="card violet"><h4>IA generativa (item 14)</h4><ul>
+      <li>Permitida para código, design e conteúdo, desde que o squad tenha direito de uso da ferramenta.</li>
+      <li>Todo uso relevante entra no <code>AI-USAGE.md</code> e é revisado por um humano antes do merge.</li>
+      <li>Código gerado passa pelos mesmos testes e varreduras que o código escrito à mão.</li>
+      <li>Imagens, sons e textos gerados não podem imitar personagens, marcas ou obras protegidas.</li>
+    </ul></div>
+    <div class="card accent"><h4>Licenças e originalidade (itens 14.2 e 15)</h4><ul>
+      <li>Prefiram ativos próprios ou com licença CC0 ou CC BY, citando o autor.</li>
+      <li>Nada de marcas, logotipos ou personagens de terceiros no jogo ou no vídeo, inclusive da Framework e do SENAI, sem autorização.</li>
+      <li>Bibliotecas com licença compatível, registradas no <code>THIRD_PARTY.md</code> e no SBOM.</li>
+    </ul></div>
+    <div class="card blue"><h4>Dados pessoais (item 16)</h4><ul>
+      <li>O jogo não pede nome, e-mail, idade, localização nem qualquer dado que identifique o jogador.</li>
+      <li>Ranking, se houver, só com apelido escolhido na hora e guardado no próprio navegador.</li>
+      <li>Telemetria anônima e agregada; documentem no README o que é coletado e por quê.</li>
+    </ul></div>
+    <div class="card green"><h4>Imagem e propriedade intelectual (itens 12 e 13)</h4><ul>
+      <li>Na UC, o protótipo continua sendo do squad.</li>
+      <li>Se o squad se inscrever, concede à Framework licença de uso dos materiais e autoriza o uso de nome, imagem e voz para divulgação do concurso. Decidam juntos e informados.</li>
+      <li>Quem aparecer no vídeo precisa concordar com a publicação.</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="block" id="s10">
+  <div class="block-head"><span class="num">10</span><h2>Ficha de entrega do squad</h2></div>
+  <p class="block-sub">Preencham juntos e entreguem até o início da aula de 09/10. A ficha gera um arquivo <code>.txt</code> para anexar no AVA com o pacote e o relatório. A autoavaliação ajuda a conferir a entrega; a nota é do professor.</p>
+
+  <div class="ex prat" id="ficha">
+    <h3>Integrantes</h3>
+    <div class="tbl-scroll"><table class="data members">
+      <thead><tr><th>#</th><th>Nome completo</th><th>RA</th><th>Papel</th></tr></thead>
+      <tbody id="memBody"></tbody>
+    </table></div>
+
+    <h3>Links das evidências</h3>
+    <div class="g2 links" id="linkBox"></div>
+
+    <h3>Checklist dos integráveis e autoavaliação</h3>
+    <div class="tbl-scroll"><table class="data">
+      <thead><tr><th>Integrável</th><th>Peso</th><th>Entregue e evidenciado</th><th>Autoavaliação (0 a 10)</th></tr></thead>
+      <tbody id="intBody"></tbody>
+    </table></div>
+
+    <h3>Banca (componente B) · estimativa do squad</h3>
+    <div class="tbl-scroll"><table class="data">
+      <thead><tr><th>Critério</th><th>Peso</th><th>Estimativa (0 a 10)</th></tr></thead>
+      <tbody id="bBody"></tbody>
+    </table></div>
+
+    <div class="g3" id="calc">
+      <div class="stat"><b id="vA">0,0</b><span>Componente A estimado</span></div>
+      <div class="stat"><b id="vB">0,0</b><span>Componente B estimado</span></div>
+      <div class="stat"><b id="vF">0,0</b><span>Nota do squad estimada (F = 1,0)</span></div>
+    </div>
+
+    <h3>Declarações</h3>
+    <ul class="decl" id="declBox"></ul>
+
+    <ul class="checks" id="finChecks"></ul>
+    <div class="finrow">
+      <button type="button" class="btn" id="btnTxt" disabled>Gerar ficha (.txt)</button>
+      <button type="button" class="btn ghost" id="btnMail" disabled>Enviar por e-mail</button>
+      <span id="finMsg">Preencha o squad, os 4 integrantes, os links obrigatórios, o checklist e as declarações.</span>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot"><div class="foot-in">
+  <h2>Fontes e documentação</h2>
+  <p>Regulamento lido na íntegra e links verificados em 02/10/2026. O regulamento pode ser alterado pela organizadora (item 17.2): confiram a versão vigente antes de se inscrever.</p>
+  <div class="srcs">
+    <div><h3>Concurso</h3><ul>
+      <li><a href="https://frameworkdigital.com.br/wp-content/uploads/2026/09/Regulamento-Framework-Arcade.pdf" target="_blank" rel="noopener">Regulamento Framework Arcade (PDF)</a><small>Framework Tecnologia em Softwares · 8 páginas</small></li>
+      <li><a href="https://frameworkdigital.com.br/" target="_blank" rel="noopener">Framework Digital</a><small>Organizadora</small></li>
+      <li><a href="https://www.instagram.com/framework.digital/" target="_blank" rel="noopener">@framework.digital no Instagram</a><small>Perfil citado no item 6.3 c</small></li>
+      <li><a href="https://www.programadoresdoamanha.org/" target="_blank" rel="noopener">Programadores do Amanhã</a><small>ONG parceira</small></li>
+    </ul></div>
+    <div><h3>GitHub Actions</h3><ul>
+      <li><a href="https://docs.github.com/en/actions" target="_blank" rel="noopener">GitHub Actions</a><small>Documentação oficial</small></li>
+      <li><a href="https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax" target="_blank" rel="noopener">Workflow syntax</a><small>GitHub Actions</small></li>
+      <li><a href="https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows" target="_blank" rel="noopener">Events that trigger workflows</a><small>push, pull_request, schedule, workflow_dispatch</small></li>
+      <li><a href="https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments" target="_blank" rel="noopener">Managing environments for deployment</a><small>Revisor obrigatório em produção</small></li>
+      <li><a href="https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets" target="_blank" rel="noopener">Using secrets in GitHub Actions</a><small>Credenciais</small></li>
+      <li><a href="https://www.conventionalcommits.org/pt-br/v1.0.0/" target="_blank" rel="noopener">Conventional Commits 1.0.0</a><small>Em português</small></li>
+      <li><a href="https://semver.org/lang/pt-BR/" target="_blank" rel="noopener">Versionamento Semântico</a><small>Em português</small></li>
+    </ul></div>
+    <div><h3>Releases, Pages e entrega progressiva</h3><ul>
+      <li><a href="https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases" target="_blank" rel="noopener">About releases</a><small>GitHub Releases</small></li>
+      <li><a href="https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages" target="_blank" rel="noopener">What is GitHub Pages?</a><small>Planos: repositório público no gratuito</small></li>
+      <li><a href="https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site" target="_blank" rel="noopener">Configuring a publishing source</a><small>Deploy a partir do branch gh-pages</small></li>
+      <li><a href="https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits" target="_blank" rel="noopener">GitHub Pages limits</a><small>Tamanho do site e banda</small></li>
+      <li><a href="https://martinfowler.com/bliki/BlueGreenDeployment.html" target="_blank" rel="noopener">BlueGreenDeployment</a><small>Martin Fowler</small></li>
+      <li><a href="https://martinfowler.com/bliki/CanaryRelease.html" target="_blank" rel="noopener">CanaryRelease</a><small>Danilo Sato, no site de Martin Fowler</small></li>
+    </ul></div>
+    <div><h3>Monitoramento e DORA</h3><ul>
+      <li><a href="https://cli.github.com/manual/gh_issue_create" target="_blank" rel="noopener">gh issue create</a><small>GitHub CLI · alertas como Issues</small></li>
+      <li><a href="https://dora.dev/guides/dora-metrics-four-keys/" target="_blank" rel="noopener">DORA's software delivery metrics</a><small>dora.dev</small></li>
+    </ul></div>
+    <div><h3>Testes e segurança</h3><ul>
+      <li><a href="https://vitest.dev/guide/" target="_blank" rel="noopener">Vitest · Getting Started</a><small>Testes de unidade e integração</small></li>
+      <li><a href="https://playwright.dev/docs/intro" target="_blank" rel="noopener">Playwright · Installation</a><small>Regressão de ponta a ponta e smoke</small></li>
+      <li><a href="https://github.com/gitleaks/gitleaks-action" target="_blank" rel="noopener">gitleaks-action</a><small>Varredura de segredos no Actions</small></li>
+      <li><a href="https://docs.npmjs.com/cli/v10/commands/npm-audit/" target="_blank" rel="noopener">npm audit</a><small>Vulnerabilidades das dependências</small></li>
+      <li><a href="https://docs.npmjs.com/cli/v10/commands/npm-sbom/" target="_blank" rel="noopener">npm sbom</a><small>SBOM em CycloneDX ou SPDX</small></li>
+      <li><a href="https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain" target="_blank" rel="noopener">Secure your supply chain</a><small>Dependabot e cadeia de suprimentos</small></li>
+      <li><a href="https://choosealicense.com/" target="_blank" rel="noopener">Choose a License</a><small>Licença do projeto</small></li>
+    </ul></div>
+    <div><h3>Jogo, IA e LGPD</h3><ul>
+      <li><a href="https://github.com/phaserjs/phaser" target="_blank" rel="noopener">Phaser (repositório oficial)</a><small>Framework de jogos HTML5</small></li>
+      <li><a href="https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_web.html" target="_blank" rel="noopener">Exporting for the Web</a><small>Godot Engine</small></li>
+      <li><a href="https://developer.mozilla.org/pt-BR/docs/Web/API/Canvas_API" target="_blank" rel="noopener">Canvas API</a><small>MDN, em português</small></li>
+      <li><a href="https://docs.github.com/en/pages" target="_blank" rel="noopener">GitHub Pages</a><small>Hospedagem pública da build</small></li>
+      <li><a href="https://stitch.withgoogle.com/" target="_blank" rel="noopener">Google Stitch</a> · <a href="https://antigravity.google/" target="_blank" rel="noopener">Antigravity</a> · <a href="https://opal.google/" target="_blank" rel="noopener">Opal</a><small>Ferramentas das Aulas 04, 05 e 07</small></li>
+      <li><a href="https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm" target="_blank" rel="noopener">Lei nº 13.709/2018 (LGPD)</a><small>Planalto</small></li>
+    </ul></div>
+  </div>
+  <p class="fine">Faculdade SENAI · Integração e Entrega Contínua – DevOps · 2º ADS · Avaliação somativa SAP1-DEVOPS · Desafio Arcade · 2026. Este documento usa o regulamento do Framework Arcade como referência de requisitos; a Faculdade SENAI não organiza o concurso e não responde por ele.</p>
+</div></footer>
+
+<script>
+(function(){
+"use strict";
+var $=function(s,r){return (r||document).querySelector(s);};
+var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s));};
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
+function words(s){var m=String(s||"").trim().match(/\S+/g);return m?m.length:0;}
+function plain(html){var d=document.createElement("div");d.innerHTML=html;return d.textContent;}
+var L="ABCD";
+
+/* ---------- progresso e trilho ---------- */
+var prog=$("#prog"), rail=$$(".rail a");
+var secs=rail.map(function(a){return document.getElementById(a.getAttribute("href").slice(1));});
+function onScroll(){
+  var h=document.documentElement, max=h.scrollHeight-h.clientHeight;
+  prog.style.width=(max>0?(h.scrollTop/max*100):0)+"%";
+  var cur=0;
+  secs.forEach(function(s,i){if(s&&s.getBoundingClientRect().top<window.innerHeight*0.35)cur=i;});
+  rail.forEach(function(a,i){a.classList.toggle("on",i===cur);});
+}
+window.addEventListener("scroll",onScroll,{passive:true});
+window.addEventListener("resize",onScroll);
+
+/* ---------- abas ---------- */
+$$(".tabs").forEach(function(tb){
+  var btns=$$("button",tb);
+  btns.forEach(function(b){
+    b.addEventListener("click",function(){
+      btns.forEach(function(x){
+        x.classList.toggle("on",x===b);
+        var p=document.getElementById(x.getAttribute("data-pane"));
+        if(p)p.classList.toggle("on",x===b);
+      });
+    });
+  });
+});
+
+/* ---------- realce de sintaxe ---------- */
+var KW={
+  groovy:"pipeline|agent|stages|stage|steps|post|environment|options|parameters|triggers|tools|when|input|parallel|matrix|script|node|always|success|failure|unstable|changed|fixed|regression|aborted|cleanup|def|if|else|try|catch|finally|return|true|false|none|any|docker|label|sh|bat|junit|echo|mail|withCredentials|withRegistry|timeout|checkout|branch",
+  bash:"sudo|apt|apt-get|docker|az|kubectl|helm|systemctl|java|curl|wget|ssh|echo|winget|git|npm|tar|export|source|node",
+  bat:"docker",
+  powershell:"winget|java|Get-Service|Restart-Service|Get-Content|Start-Process|Environment|SetEnvironmentVariable",
+  dockerfile:"FROM|USER|RUN|ENV|COPY|WORKDIR|EXPOSE|CMD|ENTRYPOINT",
+  js:"import|from|const|let|var|await|async|function|return|if|else|for|of|new|true|false|null|process|console",
+  yaml:""
+};
+function highlight(pre){
+  var code=pre.querySelector("code"), lang=pre.getAttribute("data-lang")||"text";
+  if(lang==="text")return;
+  var txt=code.textContent, parts=[];
+  var cmt = (lang==="groovy"||lang==="js") ? "\\/\\/[^\\n]*|\\/\\*[\\s\\S]*?\\*\\/" : "(?<![^\\s])#[^\\n]*";
+  var str = lang==="js" ? "`(?:[^`\\\\]|\\\\.)*`|'(?:[^'\\\\\\n]|\\\\.)*'|\"(?:[^\"\\\\\\n]|\\\\.)*\"" : lang==="groovy" ? "'''[\\s\\S]*?'''|\"\"\"[\\s\\S]*?\"\"\"|'(?:[^'\\\\\\n]|\\\\.)*'|\"(?:[^\"\\\\\\n]|\\\\.)*\"" : "'[^'\\n]*'|\"(?:[^\"\\\\\\n]|\\\\.)*\"";
+  var vr="\\$\\{?[A-Za-z_][A-Za-z0-9_]*\\}?";
+  var kw = KW[lang] ? "(?<![\\w-])(?:"+KW[lang]+")(?![\\w-])" : "(?!)";
+  var ykey = lang==="yaml" ? "[A-Za-z_][\\w-]*(?=:(?:\\s|$))" : "(?!)";
+  var re=new RegExp("("+cmt+")|("+str+")|("+vr+")|("+kw+")|("+ykey+")","gm");
+  var last=0,m;
+  while((m=re.exec(txt))!==null){
+    if(m[0].length===0){re.lastIndex++;continue;}
+    parts.push(esc(txt.slice(last,m.index)));
+    var cls=m[1]?"cmt":m[2]?"str":m[3]?"var":"key";
+    parts.push('<span class="'+cls+'">'+esc(m[0])+"</span>");
+    last=m.index+m[0].length;
+  }
+  parts.push(esc(txt.slice(last)));
+  code.innerHTML=parts.join("");
+}
+$$("pre.code").forEach(function(p){try{highlight(p);}catch(e){}});
+
+/* ---------- copiar código ---------- */
+$$(".codebox .cp").forEach(function(b){
+  b.addEventListener("click",function(){
+    var t=b.closest(".codebox").querySelector("pre").textContent;
+    function done(){b.textContent="copiado ✓";setTimeout(function(){b.textContent="copiar";},1600);}
+    if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(t).then(done,fallback);}else{fallback();}
+    function fallback(){var ta=document.createElement("textarea");ta.value=t;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();try{document.execCommand("copy");done();}catch(e){}document.body.removeChild(ta);}
+  });
+});
+
+
+/* ---------- dados da avaliação ---------- */
+var INTS=[
+  ["INT-01","Repositório e fluxo Git",10],["INT-02","GDD como código",8],["INT-03","Pipeline CI/CD no GitHub Actions",15],
+  ["INT-04","Testes automatizados",12],["INT-05","Segurança, licenças e uso de IA",10],["INT-06","Release versionada e empacotada",10],
+  ["INT-07","Ambientes, entrega progressiva e rollback",12],["INT-08","Monitoramento, alertas e métricas DORA",10],
+  ["INT-09","Build pública e pacote de submissão",8],["INT-10","Vídeo pitch e relatório técnico",5]
+];
+var BCRIT=[["Inovação e originalidade",25],["Viabilidade técnica e execução",25],["Qualidade do protótipo (jogabilidade)",30],["Apresentação",20]];
+var PAPEIS=["Produto e Game Design","Desenvolvimento e Qualidade","Plataforma e Release","SRE e Segurança"];
+var LINKS=[
+  ["lkBuild","URL pública do jogo (produção)",true],["lkHml","URL de homologação",false],
+  ["lkCI","Última execução verde da pipeline (link ou print)",true],["lkGraf","Painel /status/ (link)",true],
+  ["lkVideo","Vídeo pitch (arquivo no AVA ou link)",true],["lkRel","Relatório técnico (PDF)",true],
+  ["lkDrive","Pasta do Google Drive do concurso (se inscritos)",false]
+];
+var DECL=[
+  "O squad tem 4 integrantes registrados em SQUAD.md, sem alterações desde 02/10.",
+  "Todo ativo de terceiros e todo uso de IA estão registrados em THIRD_PARTY.md e AI-USAGE.md.",
+  "Nenhuma credencial real está no repositório e a produção só foi alterada pela pipeline.",
+  "O scripts/triagem.sh foi executado na tag v1.0.0 e terminou com TRIAGEM APROVADA."
+];
+
+function num(v){var n=parseFloat(String(v).replace(",","."));return isNaN(n)?null:Math.max(0,Math.min(10,n));}
+function fmt(n){return n.toFixed(1).replace(".",",");}
+function slug(s){return String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"")||"squad";}
+
+$("#memBody").innerHTML=PAPEIS.map(function(p,i){
+  return '<tr><td>'+(i+1)+'</td><td><input type="text" class="fin mNome" data-i="'+i+'" placeholder="Nome completo"></td>'+
+    '<td><input type="text" class="fin mRA" data-i="'+i+'" inputmode="numeric" placeholder="RA"></td>'+
+    '<td><select class="fin mPapel" data-i="'+i+'">'+PAPEIS.map(function(q,j){return '<option'+(i===j?" selected":"")+">"+esc(q)+"</option>";}).join("")+'</select></td></tr>';
+}).join("");
+$("#linkBox").innerHTML=LINKS.map(function(l){
+  return '<label class="fld"><span>'+esc(l[1])+(l[2]?' <b class="req">*</b>':' <i>(opcional)</i>')+'</span><input type="text" class="fin" id="'+l[0]+'" placeholder="https://…"></label>';
+}).join("");
+$("#intBody").innerHTML=INTS.map(function(it,i){
+  return '<tr><td><b>'+it[0]+'</b> '+esc(it[1])+'</td><td>'+it[2]+'%</td><td><label class="chk"><input type="checkbox" class="fin iChk" data-i="'+i+'"> sim</label></td>'+
+    '<td><input type="number" class="fin iNota" data-i="'+i+'" min="0" max="10" step="0.5" placeholder="0–10"></td></tr>';
+}).join("");
+$("#bBody").innerHTML=BCRIT.map(function(c,i){
+  return '<tr><td>'+esc(c[0])+'</td><td>'+c[1]+'%</td><td><input type="number" class="fin bNota" data-i="'+i+'" min="0" max="10" step="0.5" placeholder="0–10"></td></tr>';
+}).join("");
+$("#declBox").innerHTML=DECL.map(function(d,i){
+  return '<li><label class="chk"><input type="checkbox" class="fin dChk" data-i="'+i+'"> '+esc(d)+'</label></li>';
+}).join("");
+
+function state(){
+  var st={squad:$("#squadNome").value.trim(),repo:$("#squadRepo").value.trim(),mem:[],links:{},ints:[],b:[],decl:[]};
+  $$(".mNome").forEach(function(e,i){st.mem.push({nome:e.value.trim(),ra:$$(".mRA")[i].value.trim(),papel:$$(".mPapel")[i].value});});
+  LINKS.forEach(function(l){st.links[l[0]]=$("#"+l[0]).value.trim();});
+  $$(".iChk").forEach(function(e,i){st.ints.push({ok:e.checked,nota:num($$(".iNota")[i].value)});});
+  $$(".bNota").forEach(function(e){st.b.push(num(e.value));});
+  $$(".dChk").forEach(function(e){st.decl.push(e.checked);});
+  var A=0,B=0;
+  st.ints.forEach(function(x,i){A+=(x.nota||0)*INTS[i][2]/100;});
+  st.b.forEach(function(x,i){B+=(x||0)*BCRIT[i][1]/100;});
+  st.A=A;st.B=B;st.F=0.7*A+0.3*B;
+  return st;
+}
+function checks(st){
+  return [
+    ["Nome do squad e repositório",!!st.squad&&/^https?:\/\/\S+/.test(st.repo)],
+    ["4 integrantes com nome e RA",st.mem.every(function(m){return m.nome.split(/\s+/).length>=2&&m.ra.length>=3;})],
+    ["Papéis distintos",new Set(st.mem.map(function(m){return m.papel;})).size===4],
+    ["Links obrigatórios",LINKS.every(function(l){return !l[2]||st.links[l[0]].length>4;})],
+    ["10 integráveis marcados",st.ints.every(function(x){return x.ok;})],
+    ["Autoavaliação completa",st.ints.every(function(x){return x.nota!==null;})&&st.b.every(function(x){return x!==null;})],
+    ["Declarações aceitas",st.decl.every(Boolean)]
+  ];
+}
+function updFin(){
+  var st=state(), cs=checks(st), all=cs.every(function(c){return c[1];});
+  $("#vA").textContent=fmt(st.A);$("#vB").textContent=fmt(st.B);$("#vF").textContent=fmt(st.F);
+  $("#finChecks").innerHTML=cs.map(function(c){return '<li class="'+(c[1]?"ok":"")+'"><i></i>'+esc(c[0])+"</li>";}).join("");
+  $("#btnTxt").disabled=!all;$("#btnMail").disabled=!all;
+  $("#finMsg").textContent=all?"Tudo pronto. Gere a ficha e anexe no AVA com o pacote.":"Faltam "+cs.filter(function(c){return !c[1];}).length+" item(ns) para liberar a ficha.";
+}
+document.addEventListener("input",function(e){if(e.target.classList.contains("fin")||e.target.id==="squadNome"||e.target.id==="squadRepo")updFin();});
+document.addEventListener("change",function(e){if(e.target.classList.contains("fin"))updFin();});
+
+function relatorio(){
+  var st=state(), L=[], d=new Date();
+  L.push("FACULDADE SENAI · INTEGRAÇÃO E ENTREGA CONTÍNUA – DEVOPS · 2º ADS");
+  L.push("AVALIAÇÃO SAP1-DEVOPS · DESAFIO ARCADE · FICHA DE ENTREGA DO SQUAD");
+  L.push("Gerada em: "+d.toLocaleString("pt-BR"));
+  L.push("");
+  L.push("Squad: "+st.squad);
+  L.push("Repositório: "+st.repo);
+  L.push("");
+  L.push("INTEGRANTES");
+  st.mem.forEach(function(m,i){L.push("  "+(i+1)+". "+m.nome+" · RA "+m.ra+" · "+m.papel);});
+  L.push("");
+  L.push("EVIDÊNCIAS");
+  LINKS.forEach(function(l){L.push("  "+l[1]+": "+(st.links[l[0]]||"—"));});
+  L.push("");
+  L.push("INTEGRÁVEIS (componente A, 70%)");
+  st.ints.forEach(function(x,i){L.push("  "+INTS[i][0]+" "+INTS[i][1]+" ("+INTS[i][2]+"%) · entregue: "+(x.ok?"sim":"não")+" · autoavaliação: "+fmt(x.nota||0));});
+  L.push("  Componente A estimado: "+fmt(st.A));
+  L.push("");
+  L.push("BANCA (componente B, 30%)");
+  st.b.forEach(function(x,i){L.push("  "+BCRIT[i][0]+" ("+BCRIT[i][1]+"%): "+fmt(x||0));});
+  L.push("  Componente B estimado: "+fmt(st.B));
+  L.push("");
+  L.push("NOTA ESTIMADA PELO SQUAD (F = 1,0): "+fmt(st.F)+"  (a nota oficial é atribuída pelo professor)");
+  L.push("");
+  L.push("DECLARAÇÕES");
+  DECL.forEach(function(t){L.push("  [x] "+t);});
+  return L.join("\r\n");
+}
+$("#btnTxt").addEventListener("click",function(){
+  var blob=new Blob(["﻿"+relatorio()],{type:"text/plain;charset=utf-8"});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="DevOps_Avaliacao_Arcade_"+slug(state().squad)+".txt";
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},500);
+});
+$("#btnMail").addEventListener("click",function(){
+  var st=state();
+  var body=relatorio();
+  if(body.length>1800)body=body.slice(0,1800)+"\r\n[…] Ficha completa no arquivo .txt anexado ao AVA.";
+  location.href="mailto:?subject="+encodeURIComponent("DevOps · Avaliação Desafio Arcade · Squad "+st.squad)+"&body="+encodeURIComponent(body);
+});
+
+updFin();
+onScroll();
+})();
+</script>
+</body>
+</html>
