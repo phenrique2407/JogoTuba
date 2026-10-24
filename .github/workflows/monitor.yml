@@ -14,10 +14,10 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       SITE_URL: ${{ vars.SITE_URL }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: observabilidade # branch só de dados de monitoramento
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: codigo # scripts da main
       - name: Sondar produção e homologação
