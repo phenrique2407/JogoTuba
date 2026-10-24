@@ -51,7 +51,7 @@ jobs:
           (cd dist && zip -qr ../build.zip .)
           sha256sum build.zip > build.zip.sha256
           mkdir -p reports
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: build-${{ github.sha }}
@@ -174,7 +174,7 @@ jobs:
           echo "${{ vars.SITE_URL }}/" > submissao/LINK_DO_JOGO.txt
           npm ci && npx playwright install --with-deps chromium
           PRAZO="${{ vars.PRAZO }}" bash scripts/triagem.sh submissao
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: submissao
           path: submissao/
