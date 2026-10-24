@@ -35,7 +35,7 @@ O banco de perguntas junta perguntas escritas à mão e variações geradas de "
 GitHub Flow com `feature/*` curtas: `main` protegida (PR + 1 revisão + CI verde) → merge → `deploy-hml` → aprovação → `deploy-prd`. Commits no padrão **Conventional Commits** (`feat:`, `fix:`, `ci:`, `docs:`, `test:`). Versionamento **SemVer** com tags anotadas (`git tag -a v1.0.0 -m "..."`). **Ninguém** escreve à mão no `gh-pages`.
 
 ## Esteira
-Para a publicação rápida do Caminho A, gere `dist/index.html` com `npm ci && npm run build` e publique esse arquivo na raiz da branch `gh-pages`, junto com `.nojekyll`. Depois, em **Settings → Pages**, selecione **Deploy from a branch → `gh-pages` / `(root)`**. Tags `vX.Y.Z` continuam gerando a GitHub Release e o pacote de submissão pelo workflow `esteira`.
+Para a publicação rápida do Caminho A, gere `dist/index.html` com `npm ci && npm run build` e mantenha esse arquivo e `.nojekyll` na raiz da branch `main`. Em **Settings → Pages**, selecione **Deploy from a branch → `main` / `(root)`**. Tags `vX.Y.Z` continuam gerando a GitHub Release e o pacote de submissão pelo workflow `esteira`.
 
 ## Privacidade (LGPD)
 O jogo **não coleta dado pessoal**. Apelido, recorde e ranking ficam apenas no `localStorage` do navegador. Não há telemetria.
