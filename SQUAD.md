@@ -1,7 +1,5 @@
 # Squad
 
-> **4 integrantes fixos** (não mudam depois do registro). O `triagem.sh` conta as linhas numeradas.
-
 | # | Nome completo | RA | Papel |
 |---|---------------|----|-------|
 | 1 | Pedro Henrique Dias Brito (@phenrique2407) | 26179889 | Desenvolvimento e Qualidade |
