@@ -6,10 +6,7 @@ Squad: Pedro Henrique Dias Brito · Pedro Augusto Lombardi da Costa · Vitório 
 
 Roguelike de perguntas de TI (inspirado no Jogo do Milhão, com cartas estilo Clover Pit e estética cyberfunk) criado para o **Desafio Arcade**: um protótipo gamificado que facilita o acesso à educação em tecnologia, **entregue por uma esteira CI/CD completa** no GitHub (Actions + Pages).
 
-## Codespaces
-O repositório traz `.devcontainer/` (Node 22, gh, jq, ffmpeg, pandoc e Chromium do Playwright). *Code → Codespaces → Create codespace on main* e siga `docs/PASSOS.md`. Para ver o jogo: `npm run build && npm run serve` e abra a porta 4173 na aba **Ports**.
-
-## Rodar o jogo e os testes
+## Rodar o jogo e os testes localmente
 ```bash
 npm ci
 npm run build && npm run serve   # http://localhost:4173
