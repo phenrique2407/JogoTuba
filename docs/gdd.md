@@ -50,4 +50,4 @@ commit -> PR (revisão + CI) -> main -> ci -> /hml/ (E2E) -> aprovação -> /rel
                                                               ^ rollback automático se o smoke falhar
 monitoramento (15 min) -> alertas (Issues) -> /status/ + DORA -> melhoria -> próximo commit
 ```
-Repositório: https://github.com/phenrique2407/JogoWeb
+Repositório: https://github.com/phenrique2407/JogoTuba
