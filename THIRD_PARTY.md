@@ -6,7 +6,7 @@
 |------|------|---------------|---------|--------------|
 | Bungee | Fonte (Google Fonts) | David Jonathan Ross | SIL OFL 1.1 | Títulos |
 | Rubik | Fonte (Google Fonts) | Hubert & Fischer, Meir Sadan | SIL OFL 1.1 | Texto |
-| `apresentador.png` | Imagem | Pedro Henrique Dias Brito: autoria/origem da imagem usada |  | Apresentador |
+| `apresentador.png` | Imagem | Pedro Henrique Dias Brito: autoria/origem da imagem usada | n/a | Apresentador |
 | Músicas e efeitos sonoros | Áudio | Sintetizados por código (WebAudio) no próprio projeto; estilos inspirados, **sem samples** | MIT (projeto) | Menu e jogo |
 | Emojis das cartas | Texto | Fonte de emojis do sistema do jogador | n/a | Ícones das cartas |
 | esbuild | Dev | Evan Wallace | MIT | Build |
