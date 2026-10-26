@@ -1,6 +1,6 @@
 ---
 title: "SHOW DO BITLHÃO — Game Design Document"
-subtitle: "Versão {{VERSION}} — {{DATA}}"
+subtitle: "Versão 1.0.0"
 author: "Pedro Henrique Dias Brito, Pedro Augusto Lombardi da Costa, Vitório Fraga Motta, Vinícius Rodrigues Vilaça"
 ---
 
