@@ -41,4 +41,4 @@ Para a publicação rápida do Caminho A, gere `dist/index.html` com `npm ci && 
 O jogo **não coleta dado pessoal**. Apelido, recorde e ranking ficam apenas no `localStorage` do navegador. Não há telemetria.
 
 ## Documentos
-`docs/gdd.md` (GDD) · `docs/relatorio.md` (relatório técnico) · `docs/PASSOS.md` · `THIRD_PARTY.md` · `AI-USAGE.md` · `LICENSE` (MIT)
+`docs/gdd.md` (GDD) · `docs/relatorio.md` (relatório técnico) · `THIRD_PARTY.md` · `AI-USAGE.md` · `LICENSE` (MIT)
