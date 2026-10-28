@@ -1,1 +1,0 @@
-Coloque aqui o pitch.mp4 (<= 90 s). O triagem.sh e o job pacote esperam submissao/pitch.mp4.
