@@ -7,5 +7,5 @@
 | 3 | Vitório Fraga Motta (@vitorio-motta) | 26180985 | Plataforma e Release |
 | 4 | Vinícius Rodrigues Vilaça (@Bladecvill) | 26179893 | Produto e Game Design |
 
-Nome do squad: **_Show do Bitlhão_** · Repositório: https://github.com/phenrique2407/JogoWeb
+Nome do squad: **_Show do Bitlhão_** · Repositório: https://github.com/phenrique2407/JogoTuba
 Período do projeto: 09/10/2026 a 12/10/2026.
