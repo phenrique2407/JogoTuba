@@ -29,22 +29,8 @@ Quiz roguelike com cartas (deckbuilding leve). Plataforma: **web estática** (de
 | Jet Set Radio, Bomb Rush Cyberfunk, Persona, Sonic Adventure | Estética e música | Inspiração; áudio sintetizado por código |
 | Regulamento Framework Arcade | Requisitos do protótipo | Framework Tecnologia em Softwares |
 
-# 5. Wireframes
-```
-MENU                         PERGUNTA                       CARTAS (a cada 5)
-+----------------------+     +------------------------+     +------------------------+
-| SHOW DO BITLHAO      |     | [vidas][nº][pts][X]    |     | ESCOLHA UMA CARTA 30s  |
-| apelido [_______]    |     | [tema·dificuldade·tipo]|     |  [carta][carta][carta] |
-| materia  [..][..]    |     | enunciado da pergunta  |     +------------------------+
-| dificuldade [F][M][D]|     | [=====tempo=====]      |
-| [JOGAR][COLECAO]     |     | [alt A][alt B]         |     FIM: pontuação, recorde,
-+----------------------+     | [alt C][alt D]         |     ranking, [PRÓXIMA][MENU]
-                             | ATIVAVEIS | PASSIVAS   |
-                             +------------------------+
-```
-_(Substituam pelas telas reais do Stitch ou capturas do jogo.)_
 
-# 6. Esteira
+# 5. Esteira
 ```
 commit -> PR (revisão + CI) -> main -> ci -> /hml/ (E2E) -> aprovação -> /releases/<sha>/ -> canário -> smoke -> 100%
                                                               ^ rollback automático se o smoke falhar
